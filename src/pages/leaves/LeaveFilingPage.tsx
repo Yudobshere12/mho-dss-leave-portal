@@ -3,31 +3,28 @@ import {
   FileSignature,
   UserCheck,
   UserPlus,
-  Calendar,
   Clock,
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
   Send,
   Loader2,
 } from 'lucide-react'
 import { useDevRole } from '../../context/DevRoleContext'
 import { countWeekdays } from '../../utils/weekday'
 import { supabase } from '../../lib/supabase'
+import { PageHeader } from '../../components/PageHeader'
 import type { LeaveType } from '../../types/database.types'
 
 export const LeaveFilingPage: React.FC = () => {
   const { currentUser, availableProfiles } = useDevRole()
 
   const isAdminOrHead = ['MHO_ADMIN', 'MHO_HEAD'].includes(currentUser.role)
-  const isAdmin = currentUser.role === 'MHO_ADMIN'
 
   // Filing Mode: 'SELF' vs 'ON_BEHALF' (only available if Admin/Head)
   const [filingMode, setFilingMode] = useState<'SELF' | 'ON_BEHALF'>('SELF')
 
   // Selected employee target when filing on behalf
-  // 'WALK_IN' or profile UUID
   const [targetType, setTargetType] = useState<string>('REGISTERED')
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [walkInName, setWalkInName] = useState<string>('')
@@ -69,7 +66,6 @@ export const LeaveFilingPage: React.FC = () => {
       ? effectiveApplicantProfile?.full_name || ''
       : walkInName.trim()
 
-  // Initialize selectedUserId default
   useEffect(() => {
     if (!selectedUserId && availableProfiles.length > 0) {
       const firstNonAdmin = availableProfiles.find((p) => p.role === 'STAFF') || availableProfiles[0]
@@ -82,14 +78,12 @@ export const LeaveFilingPage: React.FC = () => {
     let isCancelled = false
 
     async function fetchDssPreview() {
-      // Need valid dates and totalDays > 0
       if (!startDate || !endDate || totalDays <= 0) {
         setDssRecommendation('')
         setDssReason('')
         return
       }
 
-      // If walk-in without a user_id, evaluate with null or synthetic check
       setIsDssLoading(true)
 
       try {
@@ -104,8 +98,6 @@ export const LeaveFilingPage: React.FC = () => {
         if (isCancelled) return
 
         if (error) {
-          console.warn('DSS RPC evaluation error:', error.message)
-          // Fallback client heuristic when Supabase backend is disconnected
           clientSideDssFallback()
         } else if (data && data.length > 0) {
           setDssRecommendation(data[0].recommendation)
@@ -113,7 +105,7 @@ export const LeaveFilingPage: React.FC = () => {
         } else {
           clientSideDssFallback()
         }
-      } catch (err) {
+      } catch {
         if (!isCancelled) {
           clientSideDssFallback()
         }
@@ -123,7 +115,6 @@ export const LeaveFilingPage: React.FC = () => {
     }
 
     function clientSideDssFallback() {
-      // Client-side simulation matching evaluate_leave_credits & evaluate_schedule_conflict
       if (!effectiveApplicantProfile && !effectiveUserId) {
         setDssRecommendation('RECOMMENDED')
         setDssReason('Walk-in application (no leave credit record required).')
@@ -160,37 +151,31 @@ export const LeaveFilingPage: React.FC = () => {
     }
   }, [effectiveUserId, leaveType, totalDays, startDate, endDate, effectiveApplicantProfile, currentUser])
 
-  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitError(null)
     setSubmitSuccess(null)
 
-    // Validation 1: Required dates
     if (!startDate || !endDate) {
       setSubmitError('Please specify both start and end dates.')
       return
     }
 
-    // Validation 2: Date ordering
     if (new Date(endDate) < new Date(startDate)) {
       setSubmitError('End date cannot be earlier than start date.')
       return
     }
 
-    // Validation 3: Working days duration
     if (totalDays <= 0) {
       setSubmitError('Selected date range contains no valid working days (weekends only).')
       return
     }
 
-    // Validation 4: Name required for walk-in
     if (filingMode === 'ON_BEHALF' && targetType === 'WALK_IN' && !walkInName.trim()) {
       setSubmitError('Please specify the full name of the walk-in employee.')
       return
     }
 
-    // Validation 5: Overdraft prevention (Rule 2.3)
     if (effectiveApplicantProfile) {
       let availableCredits = 0
       if (leaveType === 'Vacation Leave') availableCredits = effectiveApplicantProfile.vacation_credits
@@ -200,7 +185,7 @@ export const LeaveFilingPage: React.FC = () => {
 
       if (totalDays > availableCredits) {
         setSubmitError(
-          `Cannot file application! Requested ${totalDays} day(s) exceeds available remaining balance (${availableCredits} days) for ${leaveType}.`
+          `Requested ${totalDays} day(s) exceeds available remaining balance (${availableCredits} days) for ${leaveType}.`
         )
         return
       }
@@ -232,78 +217,66 @@ export const LeaveFilingPage: React.FC = () => {
       }
 
       setSubmitSuccess(
-        `Leave application successfully filed! Reference #${data?.[0]?.id || 'NEW'} has been queued for executive review.`
+        `Leave application #${data?.[0]?.id || ''} successfully filed and queued for review.`
       )
 
-      // Reset form
       setReason('')
       setOtherLeaveType('')
       if (targetType === 'WALK_IN') setWalkInName('')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      setSubmitError(`Failed to submit leave application: ${msg}`)
+      setSubmitError(`Failed to submit application: ${msg}`)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          {filingMode === 'ON_BEHALF' ? 'Administrative On-Behalf Filing' : 'File Leave Application'}
-        </h1>
-        <p className="text-sm text-slate-500">
-          Municipal Health Office Decision Support System leave submission module.
-        </p>
-      </div>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <PageHeader
+        title={filingMode === 'ON_BEHALF' ? 'On-Behalf Filing' : 'Apply for Leave'}
+      />
 
-      {/* Admin Filing Mode Switcher */}
       {isAdminOrHead && (
-        <div className="flex items-center gap-2 rounded-2xl border border-teal-200 bg-teal-50/70 p-2 text-xs">
-          <span className="font-semibold text-teal-900 px-2">Filing Mode:</span>
+        <div className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/70 p-2 text-xs">
+          <span className="font-semibold text-teal-900 px-2">Mode:</span>
           <button
             type="button"
             onClick={() => setFilingMode('SELF')}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors ${
               filingMode === 'SELF'
                 ? 'bg-teal-700 text-white shadow-soft font-semibold'
                 : 'text-teal-800 hover:bg-teal-100/70'
             }`}
           >
             <UserCheck className="h-3.5 w-3.5" />
-            Self (Acting User: {currentUser.full_name})
+            Self
           </button>
           <button
             type="button"
             onClick={() => setFilingMode('ON_BEHALF')}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors ${
               filingMode === 'ON_BEHALF'
                 ? 'bg-teal-700 text-white shadow-soft font-semibold'
                 : 'text-teal-800 hover:bg-teal-100/70'
             }`}
           >
             <UserPlus className="h-3.5 w-3.5" />
-            File on Behalf of Personnel / Walk-in
+            On Behalf / Walk-in
           </button>
         </div>
       )}
 
-      {/* Main Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-card space-y-6">
-        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-            <FileSignature className="h-4 w-4" />
-          </div>
-          <h2 className="text-base font-bold text-slate-800">
-            {filingMode === 'ON_BEHALF' ? 'On-Behalf Filing Form' : 'Employee Self-Service Filing'}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs space-y-5">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+          <FileSignature className="h-4 w-4 text-teal-700" />
+          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            {filingMode === 'ON_BEHALF' ? 'On-Behalf Filing Form' : 'Leave Request Form'}
           </h2>
         </div>
 
-        {/* Feedback Alerts */}
         {submitSuccess && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 flex items-start gap-2.5">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800 flex items-start gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
             <div>
               <div className="font-bold">Application Submitted</div>
@@ -313,25 +286,24 @@ export const LeaveFilingPage: React.FC = () => {
         )}
 
         {submitError && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800 flex items-start gap-2.5">
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <div className="font-bold">Validation Error</div>
+              <div className="font-bold">Submission Error</div>
               <div>{submitError}</div>
             </div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* On-Behalf Target Selection */}
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {filingMode === 'ON_BEHALF' && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 space-y-3">
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Select Filing Target
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2.5">
+              <label className="block text-2xs font-bold text-slate-700 uppercase tracking-wider">
+                Filing Target
               </label>
 
               <div className="flex gap-4 text-xs font-medium text-slate-700">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="radio"
                     name="targetType"
@@ -339,9 +311,9 @@ export const LeaveFilingPage: React.FC = () => {
                     onChange={() => setTargetType('REGISTERED')}
                     className="text-teal-700 focus:ring-teal-700 accent-teal-700"
                   />
-                  Registered Portal Personnel
+                  Registered Staff
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="radio"
                     name="targetType"
@@ -349,78 +321,74 @@ export const LeaveFilingPage: React.FC = () => {
                     onChange={() => setTargetType('WALK_IN')}
                     className="text-teal-700 focus:ring-teal-700 accent-teal-700"
                   />
-                  Walk-in / Unregistered Staff
+                  Walk-in Personnel
                 </label>
               </div>
 
               {targetType === 'REGISTERED' ? (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Select Staff Member *
+                  <label className="block text-2xs font-semibold text-slate-600 mb-1">
+                    Staff Member *
                   </label>
                   <select
                     value={effectiveUserId || ''}
                     onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   >
                     {availableProfiles.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.full_name} ({p.role} - {p.position || 'Staff'})
+                        {p.full_name} ({p.role})
                       </option>
                     ))}
                   </select>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Walk-in Employee Full Name *
+                  <label className="block text-2xs font-semibold text-slate-600 mb-1">
+                    Walk-in Full Name *
                   </label>
                   <input
                     type="text"
                     required
                     value={walkInName}
                     onChange={(e) => setWalkInName(e.target.value)}
-                    placeholder="Enter full name of applicant..."
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                    placeholder="Full name..."
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   />
                 </div>
               )}
             </div>
           )}
 
-          {/* Current Entitlements Banner */}
           {effectiveApplicantProfile && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
               <div>
                 <span className="font-bold text-slate-900">{effectiveApplicantProfile.full_name}</span>
-                <span className="text-slate-500 ml-1.5">
+                <span className="text-slate-500 ml-1">
                   ({effectiveApplicantProfile.position || effectiveApplicantProfile.role})
                 </span>
               </div>
-              <div className="flex gap-4 font-medium">
+              <div className="flex gap-3 text-2xs font-medium">
                 <span>
-                  VL: <strong className="text-teal-800">{effectiveApplicantProfile.vacation_credits.toFixed(2)}</strong>
+                  VL: <strong className="text-teal-800">{effectiveApplicantProfile.vacation_credits.toFixed(1)}</strong>
                 </span>
                 <span>
-                  SL: <strong className="text-emerald-700">{effectiveApplicantProfile.sick_credits.toFixed(2)}</strong>
+                  SL: <strong className="text-emerald-700">{effectiveApplicantProfile.sick_credits.toFixed(1)}</strong>
                 </span>
                 <span>
-                  EL: <strong className="text-amber-700">{effectiveApplicantProfile.emergency_credits.toFixed(2)}</strong>
+                  EL: <strong className="text-amber-700">{effectiveApplicantProfile.emergency_credits.toFixed(1)}</strong>
                 </span>
               </div>
             </div>
           )}
 
-          {/* Category & Other Type */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Leave Category *
-              </label>
+              <label className="block font-semibold text-slate-700 mb-1">Category *</label>
               <select
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value as LeaveType)}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
               >
                 <option value="Vacation Leave">Vacation Leave</option>
                 <option value="Sick Leave">Sick Leave</option>
@@ -434,72 +402,55 @@ export const LeaveFilingPage: React.FC = () => {
 
             {leaveType === 'Other' && (
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Specify Category Details *
-                </label>
+                <label className="block font-semibold text-slate-700 mb-1">Details *</label>
                 <input
                   type="text"
                   required
                   value={otherLeaveType}
                   onChange={(e) => setOtherLeaveType(e.target.value)}
                   placeholder="e.g. Bereavement, Quarantine..."
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                 />
               </div>
             )}
           </div>
 
-          {/* Dates Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Start Date *
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  required
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-                />
-              </div>
+              <label className="block font-semibold text-slate-700 mb-1">Start Date *</label>
+              <input
+                type="date"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+              />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                End Date *
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  required
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-                />
-              </div>
+              <label className="block font-semibold text-slate-700 mb-1">End Date *</label>
+              <input
+                type="date"
+                required
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+              />
             </div>
           </div>
 
-          {/* Live Calculated Duration */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 flex items-center justify-between text-xs">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 font-medium text-slate-700">
-              <Clock className="h-4 w-4 text-teal-700" />
-              Calculated Duration (Excluding Saturdays & Sundays):
+              <Clock className="h-3.5 w-3.5 text-teal-700" />
+              Duration (weekdays only):
             </span>
-            <span
-              className={`font-bold text-sm ${
-                totalDays > 0 ? 'text-teal-800' : 'text-slate-400'
-              }`}
-            >
+            <span className={`font-bold text-xs ${totalDays > 0 ? 'text-teal-800' : 'text-slate-400'}`}>
               {totalDays} working day(s)
             </span>
           </div>
 
-          {/* Live Decision Support System (DSS) Preview Card */}
           {startDate && endDate && (
             <div
-              className={`rounded-2xl border p-4 text-xs transition-all ${
+              className={`rounded-xl border p-3 text-xs transition-all ${
                 isDssLoading
                   ? 'border-slate-200 bg-slate-50 text-slate-600'
                   : dssRecommendation === 'RECOMMENDED'
@@ -507,63 +458,59 @@ export const LeaveFilingPage: React.FC = () => {
                   : 'border-amber-200 bg-amber-50 text-amber-900'
               }`}
             >
-              <div className="flex items-center justify-between font-bold mb-1.5">
+              <div className="flex items-center justify-between font-bold mb-1">
                 <span className="flex items-center gap-1.5">
                   {isDssLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
                   ) : dssRecommendation === 'RECOMMENDED' ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                   ) : (
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
                   )}
-                  Decision Support System (DSS) Live Advisory:
+                  DSS Advisory:
                 </span>
                 {!isDssLoading && (
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-2xs font-extrabold uppercase tracking-wide ${
+                    className={`rounded-full px-2 py-0.5 text-2xs font-bold uppercase ${
                       dssRecommendation === 'RECOMMENDED'
                         ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
                         : 'bg-amber-100 text-amber-900 border border-amber-200'
                     }`}
                   >
-                    {dssRecommendation || 'CALCULATING...'}
+                    {dssRecommendation || 'CALCULATING'}
                   </span>
                 )}
               </div>
-              <div className="text-xs leading-relaxed">
-                {isDssLoading ? 'Evaluating leave balance and active duty staff coverage...' : dssReason}
+              <div className="text-2xs leading-relaxed">
+                {isDssLoading ? 'Evaluating balance and duty staff coverage...' : dssReason}
               </div>
             </div>
           )}
 
-          {/* Reason / Remarks */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Reason / Justification Remarks
-            </label>
+            <label className="block font-semibold text-slate-700 mb-1">Reason / Remarks</label>
             <textarea
-              rows={3}
+              rows={2}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="State justification or applicant remarks..."
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+              placeholder="Justification remarks..."
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             />
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting || totalDays <= 0}
-            className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full flex items-center justify-center gap-1.5 rounded-full bg-teal-700 px-4 py-2.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Submitting Application...
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Submitting...
               </>
             ) : (
               <>
-                <Send className="h-4 w-4" />
+                <Send className="h-3.5 w-3.5" />
                 Submit Application
               </>
             )}
@@ -573,4 +520,5 @@ export const LeaveFilingPage: React.FC = () => {
     </div>
   )
 }
+
 export default LeaveFilingPage
