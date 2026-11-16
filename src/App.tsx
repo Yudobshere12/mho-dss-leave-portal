@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { DevRoleProvider } from './context/DevRoleContext'
 import { Layout } from './components/Layout'
-import { DemoBanner } from './components/DemoBanner'
 
 // Screens
 import { LoginScreen } from './pages/auth/LoginScreen'
@@ -28,7 +27,6 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <DevRoleProvider>
-        <DemoBanner />
         <BrowserRouter>
           <Routes>
             {/* Default entry redirects to /login */}
