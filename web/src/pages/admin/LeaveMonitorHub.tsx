@@ -235,15 +235,13 @@ export const LeaveMonitorHub: React.FC = () => {
     setIsProcessing(true)
     try {
       if (decisionAction === 'APPROVE') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).rpc('approve_leave', {
+        await supabase.rpc('approve_leave', {
           p_leave_id: applicationId,
           p_admin_id: currentUser.id,
           p_remarks: remarks || null,
         })
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).rpc('reject_leave', {
+        await supabase.rpc('reject_leave', {
           p_leave_id: applicationId,
           p_admin_id: currentUser.id,
           p_remarks: remarks || null,
