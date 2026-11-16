@@ -116,16 +116,14 @@ export const ApprovalQueueScreen: React.FC = () => {
 
     try {
       if (decisionAction === 'APPROVE') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any).rpc('approve_leave', {
+        const { error } = await supabase.rpc('approve_leave', {
           p_leave_id: applicationId,
           p_admin_id: currentUser.id,
           p_remarks: remarks || null,
         })
         if (error) throw new Error(error.message)
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any).rpc('reject_leave', {
+        const { error } = await supabase.rpc('reject_leave', {
           p_leave_id: applicationId,
           p_admin_id: currentUser.id,
           p_remarks: remarks || null,
