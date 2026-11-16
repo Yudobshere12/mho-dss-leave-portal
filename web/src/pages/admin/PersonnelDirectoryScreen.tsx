@@ -118,8 +118,7 @@ const FALLBACK_DEMO: PersonnelRow[] = [
 
 async function fetchPersonnel(): Promise<PersonnelRow[]> {
   // 1. Load all profiles
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profiles, error: pe } = await (supabase as any)
+  const { data: profiles, error: pe } = await supabase
     .from('profiles')
     .select('id, full_name, email, role, position, is_active, vacation_credits, sick_credits, emergency_credits')
     .order('full_name')
@@ -127,8 +126,7 @@ async function fetchPersonnel(): Promise<PersonnelRow[]> {
   if (pe) throw pe
 
   // 2. Load leave_balances (allocations)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: balances, error: be } = await (supabase as any)
+  const { data: balances, error: be } = await supabase
     .from('leave_balances')
     .select('user_id, vacation_credits, sick_credits, emergency_credits')
 
@@ -136,8 +134,7 @@ async function fetchPersonnel(): Promise<PersonnelRow[]> {
 
   // 3. Load approved leave_applications for current calendar year to compute usage
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: approved, error: ae } = await (supabase as any)
+  const { data: approved, error: ae } = await supabase
     .from('leave_applications')
     .select('user_id, leave_type, total_days')
     .eq('status', 'APPROVED')
@@ -171,11 +168,7 @@ async function fetchPersonnel(): Promise<PersonnelRow[]> {
     usageMap[uid][leaveKey] = (usageMap[uid][leaveKey] ?? 0) + Number(a.total_days)
   }
 
-  return ((profiles ?? []) as Array<{
-    id: string; full_name: string; email: string; role: string;
-    position: string | null; is_active: boolean;
-    vacation_credits: number; sick_credits: number; emergency_credits: number;
-  }>).map((p) => ({
+  return (profiles ?? []).map((p) => ({
     id: p.id,
     full_name: p.full_name,
     email: p.email,
