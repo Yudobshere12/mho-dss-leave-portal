@@ -93,7 +93,8 @@ export const LeaveFilingPage: React.FC = () => {
       setIsDssLoading(true)
 
       try {
-        const { data, error } = await supabase.rpc('get_dss_recommendation', {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any).rpc('get_dss_recommendation', {
           p_user_id: effectiveUserId,
           p_leave_type: leaveType,
           p_days: totalDays,
@@ -225,7 +226,8 @@ export const LeaveFilingPage: React.FC = () => {
         created_by_admin_id: filingMode === 'ON_BEHALF' ? currentUser.id : null,
       }
 
-      const { data, error } = await supabase.from('leave_applications').insert(payload).select()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).from('leave_applications').insert(payload).select()
 
       if (error) {
         throw new Error(error.message)

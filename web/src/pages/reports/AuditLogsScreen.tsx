@@ -107,15 +107,17 @@ export const AuditLogsScreen: React.FC = () => {
       setIsLoading(true)
       try {
         // 1. Fetch counts
-        const { data: apps } = await supabase.from('leave_applications').select('status')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: apps } = await (supabase as any).from('leave_applications').select('status')
         if (apps) {
-          setTotalApproved(apps.filter((a) => a.status === 'APPROVED').length)
-          setTotalPending(apps.filter((a) => a.status === 'PENDING').length)
-          setTotalRejected(apps.filter((a) => a.status === 'REJECTED').length)
+          setTotalApproved(apps.filter((a: { status: string }) => a.status === 'APPROVED').length)
+          setTotalPending(apps.filter((a: { status: string }) => a.status === 'PENDING').length)
+          setTotalRejected(apps.filter((a: { status: string }) => a.status === 'REJECTED').length)
         }
 
         // 2. Fetch audit logs
-        const { data: logsData, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: logsData, error } = await (supabase as any)
           .from('audit_logs')
           .select('*')
           .order('created_at', { ascending: false })
@@ -125,7 +127,7 @@ export const AuditLogsScreen: React.FC = () => {
           setLogs(DEMO_AUDIT_LOGS)
         } else if (logsData && logsData.length > 0) {
           const profileMap = new Map(availableProfiles.map((p) => [p.id, p]))
-          const enriched: EnrichedAuditLog[] = logsData.map((l) => {
+          const enriched: EnrichedAuditLog[] = (logsData as EnrichedAuditLog[]).map((l) => {
             const p = l.user_id ? profileMap.get(l.user_id) : null
             return {
               ...l,
@@ -203,7 +205,7 @@ export const AuditLogsScreen: React.FC = () => {
   const handleExportCsv = () => {
     exportToCsv(
       `mho_audit_logs_${new Date().toISOString().slice(0, 10)}`,
-      filteredLogs,
+      filteredLogs as unknown as Record<string, unknown>[],
       [
         { key: 'id', label: 'Log ID' },
         { key: 'created_at', label: 'Timestamp' },

@@ -114,10 +114,13 @@ export const DevRoleProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     async function fetchProfiles() {
       try {
-        const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: rawData, error } = await (supabase as any)
           .from('profiles')
           .select('*')
           .order('role', { ascending: false })
+
+        const data = rawData as Profile[] | null
 
         if (error) {
           console.warn('Could not load profiles from Supabase, using fallback roster:', error.message)
