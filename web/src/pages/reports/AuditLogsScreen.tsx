@@ -17,11 +17,12 @@ import {
 import { useDevRole } from '../../context/DevRoleContext'
 import { supabase } from '../../lib/supabase'
 import { exportToCsv } from '../../utils/csv'
-import type { Database } from '../../types/database.types'
+import type { Tables } from '../../types/database.types'
 
-type AuditLog = Database['public']['Tables']['audit_logs']['Row']
+type AuditLog = Tables<'audit_logs'>
 
 interface EnrichedAuditLog extends AuditLog {
+  [key: string]: unknown
   user_full_name?: string
   user_role?: string
 }
@@ -107,17 +108,15 @@ export const AuditLogsScreen: React.FC = () => {
       setIsLoading(true)
       try {
         // 1. Fetch counts
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: apps } = await (supabase as any).from('leave_applications').select('status')
+        const { data: apps } = await supabase.from('leave_applications').select('status')
         if (apps) {
-          setTotalApproved(apps.filter((a: { status: string }) => a.status === 'APPROVED').length)
-          setTotalPending(apps.filter((a: { status: string }) => a.status === 'PENDING').length)
-          setTotalRejected(apps.filter((a: { status: string }) => a.status === 'REJECTED').length)
+          setTotalApproved(apps.filter((a) => a.status === 'APPROVED').length)
+          setTotalPending(apps.filter((a) => a.status === 'PENDING').length)
+          setTotalRejected(apps.filter((a) => a.status === 'REJECTED').length)
         }
 
         // 2. Fetch audit logs
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: logsData, error } = await (supabase as any)
+        const { data: logsData, error } = await supabase
           .from('audit_logs')
           .select('*')
           .order('created_at', { ascending: false })
@@ -127,7 +126,7 @@ export const AuditLogsScreen: React.FC = () => {
           setLogs(DEMO_AUDIT_LOGS)
         } else if (logsData && logsData.length > 0) {
           const profileMap = new Map(availableProfiles.map((p) => [p.id, p]))
-          const enriched: EnrichedAuditLog[] = (logsData as EnrichedAuditLog[]).map((l) => {
+          const enriched: EnrichedAuditLog[] = logsData.map((l) => {
             const p = l.user_id ? profileMap.get(l.user_id) : null
             return {
               ...l,
@@ -205,7 +204,7 @@ export const AuditLogsScreen: React.FC = () => {
   const handleExportCsv = () => {
     exportToCsv(
       `mho_audit_logs_${new Date().toISOString().slice(0, 10)}`,
-      filteredLogs as unknown as Record<string, unknown>[],
+      filteredLogs,
       [
         { key: 'id', label: 'Log ID' },
         { key: 'created_at', label: 'Timestamp' },
