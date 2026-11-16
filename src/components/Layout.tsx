@@ -21,9 +21,9 @@ export const Layout: React.FC = () => {
   const pageTitle = getPageTitle(location.pathname)
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 transition-colors">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0 md:pl-16">
         <Header
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           title={pageTitle}
