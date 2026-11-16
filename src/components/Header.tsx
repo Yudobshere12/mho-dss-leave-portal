@@ -1,6 +1,6 @@
 import React from 'react'
 import { useDevRole } from '../context/DevRoleContext'
-import { ShieldAlert, UserCheck, Menu, User } from 'lucide-react'
+import { UserCheck, Menu, User } from 'lucide-react'
 
 interface HeaderProps {
   onToggleSidebar?: () => void
@@ -54,11 +54,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* TEMPORARY DEV ROLE SWITCHER */}
-        <div className="flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-900 shadow-2xs">
-          <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
+        {/* Role Switcher */}
+        <div className="flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs text-teal-900 shadow-2xs">
+          <UserCheck className="h-4 w-4 text-teal-700 shrink-0" />
           <span className="hidden font-medium sm:inline">
-            <span className="font-bold text-amber-950">[DEV SWITCHER - TEMPORARY]:</span>
+            <span className="font-semibold text-teal-950">Switch Role:</span>
           </span>
           <select
             value={currentUser.id}
@@ -66,8 +66,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
               const selected = availableProfiles.find((p) => p.id === e.target.value)
               if (selected) setCurrentUser(selected)
             }}
-            className="rounded-full border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-900 shadow-2xs focus:border-teal-700 focus:outline-hidden focus:ring-1 focus:ring-teal-700"
-            title="Temporary Dev User Switcher"
+            className="rounded-full border border-teal-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-900 shadow-2xs focus:border-teal-700 focus:outline-hidden focus:ring-1 focus:ring-teal-700"
+            title="Switch User Role"
           >
             {availableProfiles.map((p) => (
               <option key={p.id} value={p.id}>
