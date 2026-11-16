@@ -7,8 +7,8 @@ interface PageHeaderProps {
 
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, action }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
-      <h1 className="text-xl font-bold tracking-tight text-slate-900">{title}</h1>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800 pb-4">
+      <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{title}</h1>
       {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
     </div>
   )
