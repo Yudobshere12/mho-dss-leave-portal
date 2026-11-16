@@ -4,10 +4,7 @@ import {
   XCircle,
   AlertTriangle,
   Loader2,
-  FileText,
-  User,
   Calendar,
-  Clock,
 } from 'lucide-react'
 import type { Database } from '../types/database.types'
 
@@ -44,12 +41,12 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-soft space-y-5 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-              isApprove ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+              isApprove ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
             }`}
           >
             {isApprove ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
@@ -65,7 +62,7 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
         </div>
 
         {/* Application Summary Box */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-xs text-slate-700 space-y-2">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="font-semibold text-slate-900">Category:</span> {application.leave_type}
@@ -82,7 +79,7 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
             </span>
           </div>
           {application.reason && (
-            <div className="border-t border-slate-200/80 pt-2 text-slate-600 italic">
+            <div className="border-t border-slate-200 pt-2 text-slate-600 italic">
               "{application.reason}"
             </div>
           )}
@@ -121,7 +118,7 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
                   ? 'e.g. Approved. Duty staffing schedule verified.'
                   : 'e.g. Disapproved due to high patient volume on requested dates.'
               }
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20 transition-all"
             />
           </div>
 
@@ -131,17 +128,17 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
               type="button"
               disabled={isProcessing}
               onClick={onClose}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isProcessing}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white shadow-2xs transition-colors disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-semibold text-white shadow-soft transition-all disabled:opacity-50 ${
                 isApprove
-                  ? 'bg-emerald-600 hover:bg-emerald-700'
-                  : 'bg-rose-600 hover:bg-rose-700'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-600/30'
+                  : 'bg-red-600 hover:bg-red-700 focus:ring-2 focus:ring-red-600/30'
               }`}
             >
               {isProcessing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}

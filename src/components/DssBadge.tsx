@@ -26,7 +26,7 @@ export const DssBadge: React.FC<DssBadgeProps> = ({ recommendation, compact = fa
     return (
       <span
         title={recommendation}
-        className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-2xs font-bold text-emerald-800 border border-emerald-200/60"
+        className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-2xs font-bold text-emerald-800 border border-emerald-200"
       >
         <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" />
         {compact ? 'RECOMMENDED' : recommendation}
@@ -37,7 +37,7 @@ export const DssBadge: React.FC<DssBadgeProps> = ({ recommendation, compact = fa
   return (
     <span
       title={recommendation}
-      className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-2xs font-bold text-amber-900 border border-amber-200/80"
+      className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-2xs font-bold text-amber-900 border border-amber-200"
     >
       <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0" />
       {compact ? 'NEEDS REVIEW' : recommendation}

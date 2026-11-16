@@ -4,16 +4,6 @@ import { supabase } from '../lib/supabase'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 
-/**
- * ==============================================================================
- * TEMPORARY - REPLACE IN AUTH PHASE
- * This DevRoleContext provides a mock user switcher for local UI development.
- * Once Supabase Auth is enabled, this context will be replaced with real
- * session and user profile hooks (e.g. useAuth()).
- * ==============================================================================
- */
-
-// Fallback seed profiles for immediate UI preview when disconnected from Supabase
 export const FALLBACK_PROFILES: Profile[] = [
   {
     id: 'a0000000-0000-0000-0000-000000000001',
