@@ -138,8 +138,7 @@ export const ExecutiveDashboard: React.FC = () => {
           setApplications(appsData)
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: settingData } = await (supabase as any)
+        const { data: settingData } = await supabase
           .from('system_settings')
           .select('value')
           .eq('key', 'min_duty_staff')
