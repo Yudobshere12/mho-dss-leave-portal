@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -10,6 +10,7 @@ import {
   UserCog,
   FileText,
   Activity,
+  LogOut,
   X,
 } from 'lucide-react'
 import { useDevRole } from '../context/DevRoleContext'
@@ -122,8 +123,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         )}
       </div>
 
-      {/* Current Dev Status Footer */}
-      <div className="border-t border-slate-200 p-4">
+      {/* Current Dev Status Footer & Logout */}
+      <div className="border-t border-slate-200 p-4 space-y-2">
+        <Link
+          to="/login"
+          onClick={onClose}
+          className="flex w-full items-center gap-2.5 rounded-full px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Exit to Login Screen</span>
+        </Link>
         <div className="rounded-xl bg-teal-50/60 border border-teal-100 p-2.5 text-xs text-slate-600">
           <div className="font-semibold text-teal-900">MHO DSS v2.0</div>
           <div className="text-2xs text-teal-700">Manolo Fortich, Bukidnon</div>

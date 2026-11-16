@@ -31,6 +31,9 @@ export function App() {
         <DemoBanner />
         <BrowserRouter>
           <Routes>
+            {/* Default entry redirects to /login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+
             {/* Public routes */}
             <Route path="/login" element={<LoginScreen />} />
             <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
@@ -38,7 +41,6 @@ export function App() {
 
             {/* Protected Portal Layout */}
             <Route element={<Layout />}>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ExecutiveDashboard />} />
               
               {/* Leave Filing (Self & Admin On-Behalf) */}
