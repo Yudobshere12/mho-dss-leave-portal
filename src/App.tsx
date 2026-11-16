@@ -6,6 +6,7 @@ import { DemoBanner } from './components/DemoBanner'
 
 // Screens
 import { LoginScreen } from './pages/auth/LoginScreen'
+import { ForgotPasswordScreen, RegisterScreen } from './pages/auth/PlaceholderScreens'
 import { ExecutiveDashboard } from './pages/dashboard/ExecutiveDashboard'
 import { LeaveFilingPage } from './pages/leaves/LeaveFilingPage'
 import { ApprovalQueueScreen } from './pages/leaves/ApprovalQueueScreen'
@@ -30,8 +31,10 @@ export function App() {
         <DemoBanner />
         <BrowserRouter>
           <Routes>
-            {/* Public route */}
+            {/* Public routes */}
             <Route path="/login" element={<LoginScreen />} />
+            <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
+            <Route path="/register" element={<RegisterScreen />} />
 
             {/* Protected Portal Layout */}
             <Route element={<Layout />}>
