@@ -1,9 +1,0 @@
-# Exclude emergency setup/reset scripts
-reset_passwords.php
-
-# Operating system metadata
-.DS_Store
-Thumbs.db
-
-# Environment/DB Config overrides if added later
-.env
