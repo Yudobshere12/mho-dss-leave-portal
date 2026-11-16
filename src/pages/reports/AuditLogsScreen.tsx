@@ -218,10 +218,10 @@ export const AuditLogsScreen: React.FC = () => {
   }
 
   const getActionBadgeColor = (action: string) => {
-    if (action.includes('APPROVED')) return 'bg-emerald-100 text-emerald-800 border-emerald-200'
-    if (action.includes('REJECTED')) return 'bg-rose-100 text-rose-800 border-rose-200'
-    if (action.includes('PENDING') || action.includes('SUBMIT')) return 'bg-amber-100 text-amber-800 border-amber-200'
-    return 'bg-blue-100 text-blue-800 border-blue-200'
+    if (action.includes('APPROVED')) return 'bg-emerald-50 text-emerald-800 border-emerald-200'
+    if (action.includes('REJECTED')) return 'bg-red-50 text-red-800 border-red-200'
+    if (action.includes('PENDING') || action.includes('SUBMIT')) return 'bg-amber-50 text-amber-800 border-amber-200'
+    return 'bg-teal-50 text-teal-800 border-teal-200'
   }
 
   return (
@@ -239,14 +239,14 @@ export const AuditLogsScreen: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
           >
             <Printer className="h-4 w-4" />
             Print Summary Report
           </button>
           <button
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700"
+            className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
           >
             <Download className="h-4 w-4" />
             Export Audit CSV
@@ -285,15 +285,15 @@ export const AuditLogsScreen: React.FC = () => {
       </div>
 
       {/* Query Filter Toolbar */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card space-y-3">
         <div className="flex items-center justify-between text-xs font-bold text-slate-700 border-b border-slate-100 pb-2">
-          <span className="flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-blue-600" />
+          <span className="flex items-center gap-1.5 text-teal-800">
+            <Filter className="h-3.5 w-3.5 text-teal-700" />
             Filter Audit Records
           </span>
           <button
             onClick={handleResetFilters}
-            className="flex items-center gap-1 text-slate-400 hover:text-slate-600 text-2xs font-semibold"
+            className="flex items-center gap-1 text-slate-400 hover:text-teal-700 text-2xs font-semibold transition-colors"
           >
             <RotateCcw className="h-3 w-3" /> Reset Filters
           </button>
@@ -304,13 +304,13 @@ export const AuditLogsScreen: React.FC = () => {
           <div>
             <label className="block text-2xs font-semibold text-slate-500 mb-1">Search Details</label>
             <div className="relative">
-              <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+              <Search className="h-3.5 w-3.5 absolute left-3 top-2.5 text-slate-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Description, actor, or IP..."
-                className="w-full rounded-lg border border-slate-300 pl-8 pr-2.5 py-1.5 text-xs focus:border-blue-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
               />
             </div>
           </div>
@@ -321,7 +321,7 @@ export const AuditLogsScreen: React.FC = () => {
             <select
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             >
               <option value="ALL">All Users</option>
               {availableProfiles.map((p) => (
@@ -338,7 +338,7 @@ export const AuditLogsScreen: React.FC = () => {
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             >
               <option value="ALL">All Actions</option>
               {availableActionTypes.map((action) => (
@@ -356,17 +356,17 @@ export const AuditLogsScreen: React.FC = () => {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-2.5 py-1 text-xs focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             />
           </div>
         </div>
       </div>
 
       {/* Main Audit Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-card overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-600" />
+            <Shield className="h-5 w-5 text-teal-700" />
             <h2 className="text-sm font-bold text-slate-800">
               System Activity & Transaction Trail ({filteredLogs.length})
             </h2>
@@ -438,7 +438,7 @@ export const AuditLogsScreen: React.FC = () => {
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-hidden"
+              className="rounded-xl border border-slate-300 bg-slate-50 px-2 py-1 text-xs focus:border-teal-700 focus:outline-hidden"
             >
               <option value={5}>5</option>
               <option value={10}>10</option>
@@ -452,7 +452,7 @@ export const AuditLogsScreen: React.FC = () => {
             <button
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="h-3.5 w-3.5" /> Previous
             </button>
@@ -462,7 +462,7 @@ export const AuditLogsScreen: React.FC = () => {
             <button
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next <ChevronRight className="h-3.5 w-3.5" />
             </button>

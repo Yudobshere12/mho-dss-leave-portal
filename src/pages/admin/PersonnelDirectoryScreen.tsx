@@ -210,10 +210,10 @@ const CreditCell: React.FC<{ credits: number; used: number; color: string }> = (
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  head: 'bg-purple-100 text-purple-800',
-  admin: 'bg-blue-100 text-blue-800',
-  hr: 'bg-teal-100 text-teal-800',
-  staff: 'bg-slate-100 text-slate-700',
+  head: 'bg-teal-50 text-teal-800 border border-teal-200',
+  admin: 'bg-teal-100 text-teal-900 border border-teal-300',
+  hr: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+  staff: 'bg-slate-100 text-slate-700 border border-slate-200',
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -293,7 +293,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             Export CSV
@@ -301,7 +301,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
           {isPrivileged && (
             <button
               onClick={() => navigate('/admin/users')}
-              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+              className="flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
             >
               <Settings className="h-3.5 w-3.5" />
               Manage Users
@@ -312,7 +312,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
 
       {/* Error banner */}
       {isError && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>
             Could not reach Supabase — showing demo data. Check your{' '}
@@ -329,13 +329,13 @@ export const PersonnelDirectoryScreen: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, email, position…"
-            className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
         >
           <option value="all">All Roles</option>
           <option value="head">Head</option>
@@ -346,7 +346,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
         >
           <option value="all">All Status</option>
           <option value="active">Active Only</option>
@@ -355,10 +355,10 @@ export const PersonnelDirectoryScreen: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-card overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
+            <Users className="h-5 w-5 text-teal-700" />
             <h2 className="text-sm font-bold text-slate-800">MHO Health Personnel</h2>
           </div>
           <span className="text-xs text-slate-500 font-medium">
@@ -405,7 +405,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
                     <CreditCell
                       credits={p.vacation_credits}
                       used={p.vacation_used}
-                      color="text-blue-700"
+                      color="text-teal-800"
                     />
                     <CreditCell
                       credits={p.sick_credits}
@@ -419,10 +419,10 @@ export const PersonnelDirectoryScreen: React.FC = () => {
                     />
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                           p.is_active
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-slate-200 text-slate-600'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200'
                         }`}
                       >
                         {p.is_active ? 'Active' : 'Inactive'}
@@ -432,7 +432,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => navigate('/admin/users')}
-                          className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-800 transition-colors"
                         >
                           Edit
                         </button>

@@ -261,15 +261,15 @@ export const LeaveFilingPage: React.FC = () => {
 
       {/* Admin Filing Mode Switcher */}
       {isAdminOrHead && (
-        <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50/60 p-2 text-xs">
-          <span className="font-semibold text-blue-900 px-2">Filing Mode:</span>
+        <div className="flex items-center gap-2 rounded-2xl border border-teal-200 bg-teal-50/70 p-2 text-xs">
+          <span className="font-semibold text-teal-900 px-2">Filing Mode:</span>
           <button
             type="button"
             onClick={() => setFilingMode('SELF')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition-colors ${
               filingMode === 'SELF'
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'text-blue-800 hover:bg-blue-100/70'
+                ? 'bg-teal-700 text-white shadow-soft font-semibold'
+                : 'text-teal-800 hover:bg-teal-100/70'
             }`}
           >
             <UserCheck className="h-3.5 w-3.5" />
@@ -278,10 +278,10 @@ export const LeaveFilingPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setFilingMode('ON_BEHALF')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition-colors ${
               filingMode === 'ON_BEHALF'
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'text-blue-800 hover:bg-blue-100/70'
+                ? 'bg-teal-700 text-white shadow-soft font-semibold'
+                : 'text-teal-800 hover:bg-teal-100/70'
             }`}
           >
             <UserPlus className="h-3.5 w-3.5" />
@@ -291,9 +291,11 @@ export const LeaveFilingPage: React.FC = () => {
       )}
 
       {/* Main Card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-2xs space-y-6">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <FileSignature className="h-5 w-5 text-blue-600" />
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-card space-y-6">
+        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+            <FileSignature className="h-4 w-4" />
+          </div>
           <h2 className="text-base font-bold text-slate-800">
             {filingMode === 'ON_BEHALF' ? 'On-Behalf Filing Form' : 'Employee Self-Service Filing'}
           </h2>
@@ -335,7 +337,7 @@ export const LeaveFilingPage: React.FC = () => {
                     name="targetType"
                     checked={targetType === 'REGISTERED'}
                     onChange={() => setTargetType('REGISTERED')}
-                    className="text-blue-600 focus:ring-blue-500"
+                    className="text-teal-700 focus:ring-teal-700 accent-teal-700"
                   />
                   Registered Portal Personnel
                 </label>
@@ -345,7 +347,7 @@ export const LeaveFilingPage: React.FC = () => {
                     name="targetType"
                     checked={targetType === 'WALK_IN'}
                     onChange={() => setTargetType('WALK_IN')}
-                    className="text-blue-600 focus:ring-blue-500"
+                    className="text-teal-700 focus:ring-teal-700 accent-teal-700"
                   />
                   Walk-in / Unregistered Staff
                 </label>
@@ -359,7 +361,7 @@ export const LeaveFilingPage: React.FC = () => {
                   <select
                     value={effectiveUserId || ''}
                     onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   >
                     {availableProfiles.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -379,7 +381,7 @@ export const LeaveFilingPage: React.FC = () => {
                     value={walkInName}
                     onChange={(e) => setWalkInName(e.target.value)}
                     placeholder="Enter full name of applicant..."
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   />
                 </div>
               )}
@@ -388,7 +390,7 @@ export const LeaveFilingPage: React.FC = () => {
 
           {/* Current Entitlements Banner */}
           {effectiveApplicantProfile && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
               <div>
                 <span className="font-bold text-slate-900">{effectiveApplicantProfile.full_name}</span>
                 <span className="text-slate-500 ml-1.5">
@@ -397,7 +399,7 @@ export const LeaveFilingPage: React.FC = () => {
               </div>
               <div className="flex gap-4 font-medium">
                 <span>
-                  VL: <strong className="text-blue-700">{effectiveApplicantProfile.vacation_credits.toFixed(2)}</strong>
+                  VL: <strong className="text-teal-800">{effectiveApplicantProfile.vacation_credits.toFixed(2)}</strong>
                 </span>
                 <span>
                   SL: <strong className="text-emerald-700">{effectiveApplicantProfile.sick_credits.toFixed(2)}</strong>
@@ -418,7 +420,7 @@ export const LeaveFilingPage: React.FC = () => {
               <select
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value as LeaveType)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
               >
                 <option value="Vacation Leave">Vacation Leave</option>
                 <option value="Sick Leave">Sick Leave</option>
@@ -441,7 +443,7 @@ export const LeaveFilingPage: React.FC = () => {
                   value={otherLeaveType}
                   onChange={(e) => setOtherLeaveType(e.target.value)}
                   placeholder="e.g. Bereavement, Quarantine..."
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                 />
               </div>
             )}
@@ -459,7 +461,7 @@ export const LeaveFilingPage: React.FC = () => {
                   required
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                 />
               </div>
             </div>
@@ -473,21 +475,21 @@ export const LeaveFilingPage: React.FC = () => {
                   required
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                 />
               </div>
             </div>
           </div>
 
           {/* Live Calculated Duration */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 flex items-center justify-between text-xs">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 font-medium text-slate-700">
-              <Clock className="h-4 w-4 text-blue-600" />
+              <Clock className="h-4 w-4 text-teal-700" />
               Calculated Duration (Excluding Saturdays & Sundays):
             </span>
             <span
               className={`font-bold text-sm ${
-                totalDays > 0 ? 'text-blue-700' : 'text-slate-400'
+                totalDays > 0 ? 'text-teal-800' : 'text-slate-400'
               }`}
             >
               {totalDays} working day(s)
@@ -497,12 +499,12 @@ export const LeaveFilingPage: React.FC = () => {
           {/* Live Decision Support System (DSS) Preview Card */}
           {startDate && endDate && (
             <div
-              className={`rounded-xl border p-4 text-xs transition-all ${
+              className={`rounded-2xl border p-4 text-xs transition-all ${
                 isDssLoading
                   ? 'border-slate-200 bg-slate-50 text-slate-600'
                   : dssRecommendation === 'RECOMMENDED'
-                  ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900'
-                  : 'border-amber-200 bg-amber-50/80 text-amber-900'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : 'border-amber-200 bg-amber-50 text-amber-900'
               }`}
             >
               <div className="flex items-center justify-between font-bold mb-1.5">
@@ -520,8 +522,8 @@ export const LeaveFilingPage: React.FC = () => {
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-2xs font-extrabold uppercase tracking-wide ${
                       dssRecommendation === 'RECOMMENDED'
-                        ? 'bg-emerald-200 text-emerald-900'
-                        : 'bg-amber-200 text-amber-900'
+                        ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                        : 'bg-amber-100 text-amber-900 border border-amber-200'
                     }`}
                   >
                     {dssRecommendation || 'CALCULATING...'}
@@ -544,7 +546,7 @@ export const LeaveFilingPage: React.FC = () => {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="State justification or applicant remarks..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             />
           </div>
 
@@ -552,7 +554,7 @@ export const LeaveFilingPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting || totalDays <= 0}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isSubmitting ? (
               <>

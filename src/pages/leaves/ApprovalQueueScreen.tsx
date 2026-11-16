@@ -204,10 +204,12 @@ export const ApprovalQueueScreen: React.FC = () => {
       )}
 
       {/* Queue Container */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <CalendarCheck className="h-5 w-5 text-blue-600" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+              <CalendarCheck className="h-4 w-4" />
+            </div>
             <h2 className="text-base font-bold text-slate-800">
               Pending Applications ({applications.length})
             </h2>
@@ -219,7 +221,7 @@ export const ApprovalQueueScreen: React.FC = () => {
 
         {isLoading ? (
           <div className="py-12 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <Loader2 className="h-6 w-6 animate-spin text-teal-700" />
             Loading approval queue...
           </div>
         ) : applications.length === 0 ? (
@@ -233,7 +235,7 @@ export const ApprovalQueueScreen: React.FC = () => {
             {applications.map((app) => (
               <div
                 key={app.id}
-                className="rounded-xl border border-slate-200 p-5 space-y-3.5 hover:border-slate-300 transition-colors shadow-2xs"
+                className="rounded-2xl border border-slate-200 p-5 space-y-3.5 hover:border-teal-200 hover:shadow-soft transition-all bg-white"
               >
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                   <div className="flex items-center gap-2">
@@ -242,7 +244,7 @@ export const ApprovalQueueScreen: React.FC = () => {
                     </span>
                     <span className="text-xs text-slate-400">#APP-{app.id}</span>
                     {app.user_id === null && (
-                      <span className="rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-2xs font-bold text-amber-800">
+                      <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-2xs font-bold text-amber-800">
                         Walk-in
                       </span>
                     )}
@@ -251,7 +253,7 @@ export const ApprovalQueueScreen: React.FC = () => {
                 </div>
 
                 {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-700">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl bg-slate-50 p-3.5 text-xs text-slate-700">
                   <div>
                     <span className="font-semibold text-slate-900">Category:</span> {app.leave_type}
                     {app.other_leave_type && ` (${app.other_leave_type})`}
@@ -262,15 +264,15 @@ export const ApprovalQueueScreen: React.FC = () => {
                       {app.start_date} &rarr; {app.end_date}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 font-semibold text-blue-800">
-                    <Clock className="h-3.5 w-3.5 text-blue-600" />
+                  <div className="flex items-center gap-1.5 font-semibold text-teal-800">
+                    <Clock className="h-3.5 w-3.5 text-teal-700" />
                     <span>{app.total_days} Working Day(s)</span>
                   </div>
                 </div>
 
                 {/* Reason */}
                 {app.reason && (
-                  <p className="text-xs text-slate-600 italic bg-white p-2 border border-slate-100 rounded">
+                  <p className="text-xs text-slate-600 italic bg-slate-50 p-3 border border-slate-200 rounded-xl">
                     "{app.reason}"
                   </p>
                 )}
@@ -285,14 +287,14 @@ export const ApprovalQueueScreen: React.FC = () => {
                     <div className="flex gap-2 justify-end">
                       <button
                         onClick={() => handleOpenDialog(app, 'REJECT')}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
                       >
                         <XCircle className="h-4 w-4" />
                         Reject Request
                       </button>
                       <button
                         onClick={() => handleOpenDialog(app, 'APPROVE')}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 shadow-2xs transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 shadow-soft transition-colors"
                       >
                         <CheckCircle2 className="h-4 w-4" />
                         Approve & Deduct Credits

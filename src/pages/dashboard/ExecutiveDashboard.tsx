@@ -238,14 +238,14 @@ export const ExecutiveDashboard: React.FC = () => {
     )
   }
 
-  // Color palette for category doughnut simulation
+  // Color palette for category breakdown - Teal & Slate scale
   const categoryColors = [
-    '#2563eb', // Blue
-    '#eab308', // Amber
-    '#10b981', // Emerald
-    '#f43f5e', // Rose
-    '#8b5cf6', // Purple
-    '#06b6d4', // Cyan
+    '#0F766E', // Primary Teal
+    '#0D9488', // Accent Teal
+    '#14B8A6', // Teal 500
+    '#059669', // Emerald
+    '#F59E0B', // Amber
+    '#64748B', // Slate 500
   ]
 
   return (
@@ -265,14 +265,14 @@ export const ExecutiveDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportSummaryCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
           >
             <Download className="h-4 w-4" />
             Export Overview CSV
           </button>
           <Link
             to="/leaves/apply"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700"
+            className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
           >
             <PlusCircle className="h-4 w-4" />
             File Leave Request
@@ -281,10 +281,10 @@ export const ExecutiveDashboard: React.FC = () => {
       </div>
 
       {/* Credits Overview Card (Personal Balance for Staff / Summary for Admin) */}
-      <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 p-5 shadow-2xs">
+      <div className="rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50/80 via-slate-50 to-white p-6 shadow-card">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <span className="text-2xs font-bold uppercase tracking-wider text-blue-600">
+            <span className="text-2xs font-bold uppercase tracking-wider text-teal-700">
               Leave Balance Summary &bull; Acting as {currentUser.full_name} ({currentUser.role})
             </span>
             <div className="text-sm text-slate-600 mt-0.5">
@@ -292,19 +292,19 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-4">
-            <div className="rounded-lg bg-white/90 border border-blue-200/80 px-4 py-2 text-center shadow-2xs">
+            <div className="rounded-xl bg-white border border-teal-200/80 px-4 py-2 text-center shadow-2xs">
               <div className="text-2xs font-semibold text-slate-500 uppercase">Vacation (VL)</div>
-              <div className="text-xl font-black text-blue-700">
+              <div className="text-xl font-black text-teal-800">
                 {currentUser.vacation_credits.toFixed(2)}
               </div>
             </div>
-            <div className="rounded-lg bg-white/90 border border-emerald-200/80 px-4 py-2 text-center shadow-2xs">
+            <div className="rounded-xl bg-white border border-emerald-200/80 px-4 py-2 text-center shadow-2xs">
               <div className="text-2xs font-semibold text-slate-500 uppercase">Sick (SL)</div>
               <div className="text-xl font-black text-emerald-700">
                 {currentUser.sick_credits.toFixed(2)}
               </div>
             </div>
-            <div className="rounded-lg bg-white/90 border border-amber-200/80 px-4 py-2 text-center shadow-2xs">
+            <div className="rounded-xl bg-white border border-amber-200/80 px-4 py-2 text-center shadow-2xs">
               <div className="text-2xs font-semibold text-slate-500 uppercase">Emergency (EL)</div>
               <div className="text-xl font-black text-amber-700">
                 {currentUser.emergency_credits.toFixed(2)}
@@ -366,25 +366,25 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         {/* Total Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs hover:shadow-xs transition-shadow">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card hover:shadow-soft transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
               Total Submissions
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
               <FileText className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-3 text-3xl font-black text-blue-600">{stats.total}</div>
+          <div className="mt-3 text-3xl font-black text-teal-700">{stats.total}</div>
           <div className="mt-1 text-2xs text-slate-400">All registered records</div>
         </div>
       </div>
 
       {/* Staffing Coverage & DSS Duty Health (Rule 3.2 Live View) */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card space-y-4">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-blue-600" />
+            <Activity className="h-5 w-5 text-teal-700" />
             <h2 className="text-sm font-bold text-slate-900">
               Healthcare Staffing Duty Coverage Monitor (DSS Engine)
             </h2>
@@ -392,13 +392,13 @@ export const ExecutiveDashboard: React.FC = () => {
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-bold ${
               staffingCoverage.isUnderThreshold
-                ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                ? 'bg-red-50 text-red-800 border border-red-200'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
             }`}
           >
             {staffingCoverage.isUnderThreshold ? (
               <>
-                <AlertTriangle className="h-3 w-3 text-rose-600" /> Under Min Threshold ({staffingCoverage.minThreshold})
+                <AlertTriangle className="h-3 w-3 text-red-600" /> Under Min Threshold ({staffingCoverage.minThreshold})
               </>
             ) : (
               <>
@@ -409,7 +409,7 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-          <div className="rounded-lg bg-slate-50 p-3.5 border border-slate-200">
+          <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-200">
             <span className="text-slate-500 font-semibold block text-2xs uppercase">Active Staff Pool</span>
             <span className="text-2xl font-extrabold text-slate-900">
               {staffingCoverage.totalActiveStaff}
@@ -417,7 +417,7 @@ export const ExecutiveDashboard: React.FC = () => {
             <span className="block text-slate-400 text-2xs mt-1">Health personnel</span>
           </div>
 
-          <div className="rounded-lg bg-slate-50 p-3.5 border border-slate-200">
+          <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-200">
             <span className="text-slate-500 font-semibold block text-2xs uppercase">On Approved Leave</span>
             <span className="text-2xl font-extrabold text-amber-600">
               {staffingCoverage.onLeaveCount}
@@ -425,11 +425,11 @@ export const ExecutiveDashboard: React.FC = () => {
             <span className="block text-slate-400 text-2xs mt-1">Personnel out today</span>
           </div>
 
-          <div className="rounded-lg bg-slate-50 p-3.5 border border-slate-200">
+          <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-200">
             <span className="text-slate-500 font-semibold block text-2xs uppercase">Duty Coverage</span>
             <span
               className={`text-2xl font-extrabold ${
-                staffingCoverage.isUnderThreshold ? 'text-rose-600' : 'text-emerald-600'
+                staffingCoverage.isUnderThreshold ? 'text-red-600' : 'text-emerald-600'
               }`}
             >
               {staffingCoverage.currentOnDuty}
@@ -437,9 +437,9 @@ export const ExecutiveDashboard: React.FC = () => {
             <span className="block text-slate-400 text-2xs mt-1">Projected available</span>
           </div>
 
-          <div className="rounded-lg bg-slate-50 p-3.5 border border-slate-200">
+          <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-200">
             <span className="text-slate-500 font-semibold block text-2xs uppercase">Safety Threshold</span>
-            <span className="text-2xl font-extrabold text-blue-700">
+            <span className="text-2xl font-extrabold text-teal-800">
               {staffingCoverage.minThreshold}
             </span>
             <span className="block text-slate-400 text-2xs mt-1">Min active staff floor</span>
@@ -450,15 +450,15 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* Middle Row: Leave Category Chart + Upcoming Approved Leaves */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Category Breakdown Chart Card (7 cols) */}
-        <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+        <div className="lg:col-span-7 rounded-2xl border border-slate-200 bg-white p-6 shadow-card space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+              <TrendingUp className="h-5 w-5 text-teal-700" />
               <h2 className="text-sm font-bold text-slate-900">
                 Leave Category Distribution
               </h2>
             </div>
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-2xs font-semibold text-slate-600">
+            <span className="rounded-full bg-teal-50 text-teal-800 border border-teal-200 px-2.5 py-0.5 text-2xs font-semibold">
               Real-time DSS
             </span>
           </div>
@@ -502,17 +502,17 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         {/* Upcoming Approved Leaves (5 cols) */}
-        <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+        <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-card space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
+              <Calendar className="h-5 w-5 text-teal-700" />
               <h2 className="text-sm font-bold text-slate-900">
                 Upcoming Approved Leaves
               </h2>
             </div>
             <Link
               to="/admin/leaves"
-              className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-teal-700 hover:text-teal-800 hover:underline flex items-center gap-1"
             >
               All &rarr;
             </Link>
@@ -527,11 +527,11 @@ export const ExecutiveDashboard: React.FC = () => {
               {stats.upcomingApproved.slice(0, 4).map((app) => (
                 <div
                   key={app.id}
-                  className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 text-xs space-y-1 hover:bg-slate-50 transition-colors"
+                  className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs space-y-1 hover:bg-teal-50/50 transition-colors"
                 >
                   <div className="flex items-center justify-between font-bold text-slate-900">
                     <span>{app.employee_name || 'Walk-in Personnel'}</span>
-                    <span className="text-2xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full font-semibold">
+                    <span className="text-2xs text-teal-800 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full font-semibold">
                       {app.total_days} days
                     </span>
                   </div>
@@ -550,15 +550,15 @@ export const ExecutiveDashboard: React.FC = () => {
       </div>
 
       {/* Bottom Table: Recent Filings Registry (Mirrors dashboard.php recent submissions) */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-card overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600" />
+            <Clock className="h-5 w-5 text-teal-700" />
             <h2 className="text-sm font-bold text-slate-800">5 Most Recent Submissions</h2>
           </div>
           <Link
             to="/admin/leaves"
-            className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-teal-700 hover:text-teal-800 hover:underline flex items-center gap-1"
           >
             Open Complete Leave Monitor <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -577,24 +577,24 @@ export const ExecutiveDashboard: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {stats.recentSubmissions.map((rf) => (
-                <tr key={rf.id} className="hover:bg-slate-50/50">
+                <tr key={rf.id} className="hover:bg-teal-50/30 transition-colors">
                   <td className="px-4 py-3 font-semibold text-slate-900">
                     {rf.employee_name || 'Walk-in Personnel'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-2xs font-medium text-slate-700">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-2xs font-medium text-slate-700">
                       {rf.leave_type}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-bold text-blue-700">{rf.total_days} d</td>
+                  <td className="px-4 py-3 font-bold text-teal-800">{rf.total_days} d</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-2xs font-extrabold ${
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-2xs font-extrabold ${
                         rf.status === 'APPROVED'
-                          ? 'bg-emerald-100 text-emerald-800'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                           : rf.status === 'REJECTED'
-                          ? 'bg-rose-100 text-rose-800'
-                          : 'bg-amber-100 text-amber-800'
+                          ? 'bg-red-50 text-red-800 border border-red-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
                       }`}
                     >
                       {rf.status}

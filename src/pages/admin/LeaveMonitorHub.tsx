@@ -302,14 +302,14 @@ export const LeaveMonitorHub: React.FC = () => {
         <div className="flex items-center gap-2">
           <Link
             to="/leaves/apply"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700"
+            className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
           >
             <PlusCircle className="h-4 w-4" />
             File Leave Request
           </Link>
           <button
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
           >
             <Download className="h-4 w-4" />
             Export CSV
@@ -318,15 +318,15 @@ export const LeaveMonitorHub: React.FC = () => {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 shadow-card space-y-3">
         <div className="flex items-center justify-between text-xs font-bold text-slate-700 border-b border-slate-100 pb-2">
-          <span className="flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-blue-600" />
+          <span className="flex items-center gap-1.5 text-teal-800">
+            <Filter className="h-3.5 w-3.5 text-teal-700" />
             Query & Filter Criteria
           </span>
           <button
             onClick={handleResetFilters}
-            className="flex items-center gap-1 text-slate-400 hover:text-slate-600 text-2xs font-semibold"
+            className="flex items-center gap-1 text-slate-400 hover:text-teal-700 text-2xs font-semibold transition-colors"
           >
             <RotateCcw className="h-3 w-3" /> Reset Filters
           </button>
@@ -337,13 +337,13 @@ export const LeaveMonitorHub: React.FC = () => {
           <div className="lg:col-span-2">
             <label className="block text-2xs font-semibold text-slate-500 mb-1">Search Keywords</label>
             <div className="relative">
-              <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+              <Search className="h-3.5 w-3.5 absolute left-3 top-2.5 text-slate-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Name, remark, or ID..."
-                className="w-full rounded-lg border border-slate-300 pl-8 pr-2.5 py-1.5 text-xs focus:border-blue-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
               />
             </div>
           </div>
@@ -354,7 +354,7 @@ export const LeaveMonitorHub: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             >
               <option value="ALL">All Statuses</option>
               <option value="PENDING">PENDING</option>
@@ -369,7 +369,7 @@ export const LeaveMonitorHub: React.FC = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             >
               <option value="ALL">All Categories</option>
               <option value="Vacation Leave">Vacation Leave</option>
@@ -389,7 +389,7 @@ export const LeaveMonitorHub: React.FC = () => {
               <select
                 value={employeeFilter}
                 onChange={(e) => setEmployeeFilter(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs focus:border-blue-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
               >
                 <option value="ALL">All Personnel</option>
                 <option value="WALK_IN">Walk-in Only</option>
@@ -409,17 +409,17 @@ export const LeaveMonitorHub: React.FC = () => {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             />
           </div>
         </div>
       </div>
 
       {/* Main Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-card overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-blue-600" />
+            <ClipboardList className="h-5 w-5 text-teal-700" />
             <h2 className="text-sm font-bold text-slate-800">
               Applications Registry ({filteredRecords.length})
             </h2>
@@ -475,7 +475,7 @@ export const LeaveMonitorHub: React.FC = () => {
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 text-center font-bold text-blue-700">
+                    <td className="px-4 py-3 text-center font-bold text-teal-800">
                       {r.total_days} d
                     </td>
 
@@ -483,10 +483,10 @@ export const LeaveMonitorHub: React.FC = () => {
                       <span
                         className={`inline-block rounded-full px-2.5 py-0.5 text-2xs font-extrabold ${
                           r.status === 'APPROVED'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                             : r.status === 'REJECTED'
-                            ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            ? 'bg-red-50 text-red-800 border border-red-200'
+                            : 'bg-amber-50 text-amber-800 border border-amber-200'
                         }`}
                       >
                         {r.status}
@@ -612,7 +612,7 @@ export const LeaveMonitorHub: React.FC = () => {
               )}
 
               {viewDetailsApp.admin_remarks && (
-                <div className="rounded-lg bg-blue-50/70 p-2.5 border border-blue-200 text-blue-900">
+                <div className="rounded-xl bg-teal-50/70 p-3 border border-teal-200 text-teal-950">
                   <span className="font-bold block mb-0.5">Decision Review Remarks:</span>
                   <span>{viewDetailsApp.admin_remarks}</span>
                 </div>
@@ -622,7 +622,7 @@ export const LeaveMonitorHub: React.FC = () => {
             <div className="flex justify-end pt-2 border-t border-slate-100">
               <button
                 onClick={() => setViewDetailsApp(null)}
-                className="rounded-lg bg-slate-800 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-900"
+                className="rounded-full bg-slate-800 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-900 transition-colors"
               >
                 Close
               </button>
