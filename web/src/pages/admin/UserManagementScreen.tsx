@@ -52,13 +52,10 @@ export const UserManagementScreen: React.FC = () => {
   const fetchProfiles = async () => {
     setIsLoading(true)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rawData, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('role', { ascending: false })
-
-      const data = rawData as Profile[] | null
 
       if (error) {
         console.warn('Could not query profiles, using local context:', error.message)
@@ -135,8 +132,7 @@ export const UserManagementScreen: React.FC = () => {
         }
 
         // Insert profile
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profData, error: profError } = await (supabase as any)
+        const { data: profData, error: profError } = await supabase
           .from('profiles')
           .insert(payload)
           .select()
@@ -144,8 +140,7 @@ export const UserManagementScreen: React.FC = () => {
         if (profError) throw new Error(profError.message)
 
         // Insert leave balances ledger row
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('leave_balances').insert({
+        await supabase.from('leave_balances').insert({
           user_id: newId,
           vacation_credits: Number(vacationCredits),
           sick_credits: Number(sickCredits),
@@ -173,8 +168,7 @@ export const UserManagementScreen: React.FC = () => {
         }
 
         // Update profile
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: profError } = await (supabase as any)
+        const { error: profError } = await supabase
           .from('profiles')
           .update(payload)
           .eq('id', selectedProfile.id)
@@ -182,8 +176,7 @@ export const UserManagementScreen: React.FC = () => {
         if (profError) throw new Error(profError.message)
 
         // Update balances ledger
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+        await supabase
           .from('leave_balances')
           .update({
             vacation_credits: Number(vacationCredits),
