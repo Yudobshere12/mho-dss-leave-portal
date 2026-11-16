@@ -2,21 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react'
 import {
   UserCog,
   UserPlus,
-  Users,
   Search,
-  Filter,
   RotateCcw,
   Edit2,
-  CheckCircle2,
-  AlertCircle,
   CreditCard,
-  Shield,
   Loader2,
   X,
-  Plus,
 } from 'lucide-react'
 import { useDevRole } from '../../context/DevRoleContext'
 import { supabase } from '../../lib/supabase'
+import { PageHeader } from '../../components/PageHeader'
+import { LoadingState } from '../../components/LoadingState'
+import { EmptyState } from '../../components/EmptyState'
+import { ErrorState } from '../../components/ErrorState'
 import type { Database, UserRole } from '../../types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -24,8 +22,9 @@ type Profile = Database['public']['Tables']['profiles']['Row']
 export const UserManagementScreen: React.FC = () => {
   const { currentUser, availableProfiles, setCurrentUser } = useDevRole()
 
-  const [profiles, setProfiles] = useState<Profile[]>(availableProfiles)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Filters
@@ -38,7 +37,7 @@ export const UserManagementScreen: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Form Fields (No password handling as auth is deferred)
+  // Form Fields
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<UserRole>('STAFF')
@@ -48,9 +47,9 @@ export const UserManagementScreen: React.FC = () => {
   const [emergencyCredits, setEmergencyCredits] = useState<number>(5.0)
   const [isActive, setIsActive] = useState<boolean>(true)
 
-  // Load profiles from Supabase or fallback
   const fetchProfiles = async () => {
     setIsLoading(true)
+    setErrorMessage(null)
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -58,16 +57,12 @@ export const UserManagementScreen: React.FC = () => {
         .order('role', { ascending: false })
 
       if (error) {
-        console.warn('Could not query profiles, using local context:', error.message)
-        setProfiles(availableProfiles)
-      } else if (data && data.length > 0) {
-        setProfiles(data)
-      } else {
-        setProfiles(availableProfiles)
+        throw new Error(error.message)
       }
+      setProfiles(data || [])
     } catch (err) {
-      console.warn('Profiles query exception:', err)
-      setProfiles(availableProfiles)
+      const msg = err instanceof Error ? err.message : String(err)
+      setErrorMessage(msg)
     } finally {
       setIsLoading(false)
     }
@@ -77,7 +72,6 @@ export const UserManagementScreen: React.FC = () => {
     fetchProfiles()
   }, [])
 
-  // Open Create Modal
   const handleOpenCreate = () => {
     setSelectedProfile(null)
     setFullName('')
@@ -91,7 +85,6 @@ export const UserManagementScreen: React.FC = () => {
     setModalMode('CREATE')
   }
 
-  // Open Edit Modal
   const handleOpenEdit = (profile: Profile) => {
     setSelectedProfile(profile)
     setFullName(profile.full_name)
@@ -110,8 +103,7 @@ export const UserManagementScreen: React.FC = () => {
     setSelectedProfile(null)
   }
 
-  // Form Submission
-  const handleSubmitForm = async (e: React.FormEvent) => {
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setFeedback(null)
@@ -131,7 +123,6 @@ export const UserManagementScreen: React.FC = () => {
           is_active: isActive,
         }
 
-        // Insert profile
         const { data: profData, error: profError } = await supabase
           .from('profiles')
           .insert(payload)
@@ -139,7 +130,6 @@ export const UserManagementScreen: React.FC = () => {
 
         if (profError) throw new Error(profError.message)
 
-        // Insert leave balances ledger row
         await supabase.from('leave_balances').insert({
           user_id: newId,
           vacation_credits: Number(vacationCredits),
@@ -152,7 +142,7 @@ export const UserManagementScreen: React.FC = () => {
 
         setFeedback({
           type: 'success',
-          message: `User account for "${fullName}" created successfully with default leave credits!`,
+          message: `User account for "${fullName}" created successfully!`,
         })
       } else if (modalMode === 'EDIT' && selectedProfile) {
         const payload = {
@@ -167,7 +157,6 @@ export const UserManagementScreen: React.FC = () => {
           updated_at: new Date().toISOString(),
         }
 
-        // Update profile
         const { error: profError } = await supabase
           .from('profiles')
           .update(payload)
@@ -175,7 +164,6 @@ export const UserManagementScreen: React.FC = () => {
 
         if (profError) throw new Error(profError.message)
 
-        // Update balances ledger
         await supabase
           .from('leave_balances')
           .update({
@@ -186,7 +174,6 @@ export const UserManagementScreen: React.FC = () => {
           })
           .eq('user_id', selectedProfile.id)
 
-        // Update local state
         setProfiles((prev) =>
           prev.map((p) =>
             p.id === selectedProfile.id
@@ -198,7 +185,6 @@ export const UserManagementScreen: React.FC = () => {
           )
         )
 
-        // If editing acting user, sync DevRoleContext
         if (currentUser.id === selectedProfile.id) {
           setCurrentUser({
             ...currentUser,
@@ -208,65 +194,22 @@ export const UserManagementScreen: React.FC = () => {
 
         setFeedback({
           type: 'success',
-          message: `User record for "${fullName}" and leave credit allocations successfully updated.`,
+          message: `User record for "${fullName}" updated successfully.`,
         })
       }
 
       handleCloseModal()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      console.warn('User update error, updating locally:', msg)
-
-      // Fallback local update for disconnected dev preview
-      if (modalMode === 'CREATE') {
-        const mockNew: Profile = {
-          id: crypto.randomUUID(),
-          full_name: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          role,
-          position: position.trim() || null,
-          vacation_credits: Number(vacationCredits),
-          sick_credits: Number(sickCredits),
-          emergency_credits: Number(emergencyCredits),
-          is_active: isActive,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-        setProfiles((prev) => [mockNew, ...prev])
-        setFeedback({
-          type: 'success',
-          message: `[DEV PREVIEW] Created user "${fullName}" with default credit allocations.`,
-        })
-      } else if (modalMode === 'EDIT' && selectedProfile) {
-        setProfiles((prev) =>
-          prev.map((p) =>
-            p.id === selectedProfile.id
-              ? {
-                  ...p,
-                  full_name: fullName.trim(),
-                  email: email.trim().toLowerCase(),
-                  role,
-                  position: position.trim() || null,
-                  vacation_credits: Number(vacationCredits),
-                  sick_credits: Number(sickCredits),
-                  emergency_credits: Number(emergencyCredits),
-                  is_active: isActive,
-                }
-              : p
-          )
-        )
-        setFeedback({
-          type: 'success',
-          message: `[DEV PREVIEW] Updated user "${fullName}" and credit balances.`,
-        })
-      }
-      handleCloseModal()
+      setFeedback({
+        type: 'error',
+        message: `Failed to save user: ${msg}`,
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Filtered dataset
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
       const searchMatch =
@@ -276,67 +219,71 @@ export const UserManagementScreen: React.FC = () => {
         (p.position && p.position.toLowerCase().includes(searchTerm.toLowerCase()))
 
       const roleMatch = roleFilter === 'ALL' || p.role === roleFilter
-
       const statusMatch =
-        statusFilter === 'ALL' || (statusFilter === 'ACTIVE' ? p.is_active : !p.is_active)
+        statusFilter === 'ALL' ||
+        (statusFilter === 'ACTIVE' && p.is_active) ||
+        (statusFilter === 'INACTIVE' && !p.is_active)
 
       return searchMatch && roleMatch && statusMatch
     })
   }, [profiles, searchTerm, roleFilter, statusFilter])
 
+  const handleResetFilters = () => {
+    setSearchTerm('')
+    setRoleFilter('ALL')
+    setStatusFilter('ALL')
+  }
+
   return (
     <div className="space-y-6">
-      {/* Page Title & Create Trigger */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            User Account & Leave Credit Management
-          </h1>
-          <p className="text-sm text-slate-500">
-            Provision staff profiles, assign system access roles, and calibrate leave balances.
-          </p>
-        </div>
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
-        >
-          <UserPlus className="h-4 w-4" />
-          Create New Employee
-        </button>
-      </div>
+      <PageHeader
+        title="User Management"
+        action={
+          <>
+            <button
+              onClick={fetchProfiles}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Refresh
+            </button>
+            <button
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Add User
+            </button>
+          </>
+        }
+      />
 
-      {/* Alert Notice */}
       {feedback && (
         <div
-          className={`rounded-xl border p-4 text-xs flex items-center justify-between ${
+          className={`rounded-xl border p-3.5 text-xs flex items-center justify-between ${
             feedback.type === 'success'
               ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-              : 'border-red-200 bg-red-50 text-red-900'
+              : 'border-rose-200 bg-rose-50 text-rose-900'
           }`}
         >
-          <span className="font-medium">{feedback.message}</span>
+          <span>{feedback.message}</span>
           <button
             onClick={() => setFeedback(null)}
-            className="text-xs font-bold underline opacity-80 hover:opacity-100"
+            className="text-2xs font-bold underline opacity-80 hover:opacity-100"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* Query Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card space-y-3">
+      {/* Filter Toolbar */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
         <div className="flex items-center justify-between text-xs font-bold text-slate-700 border-b border-slate-100 pb-2">
-          <span className="flex items-center gap-1.5 text-teal-800">
-            <Filter className="h-3.5 w-3.5 text-teal-700" />
-            Filter Personnel Records
+          <span className="text-teal-800 uppercase tracking-wider text-2xs font-semibold">
+            Filter Roster
           </span>
           <button
-            onClick={() => {
-              setSearchTerm('')
-              setRoleFilter('ALL')
-              setStatusFilter('ALL')
-            }}
+            onClick={handleResetFilters}
             className="flex items-center gap-1 text-slate-400 hover:text-teal-700 text-2xs font-semibold transition-colors"
           >
             <RotateCcw className="h-3 w-3" /> Reset
@@ -344,166 +291,154 @@ export const UserManagementScreen: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          {/* Search */}
           <div>
-            <label className="block text-2xs font-semibold text-slate-500 mb-1">Search Staff</label>
+            <label className="block text-2xs font-semibold text-slate-500 mb-1">Search</label>
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-3 top-2.5 text-slate-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Name, email, or position..."
+                placeholder="Name, email, position..."
                 className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
               />
             </div>
           </div>
 
-          {/* Role */}
           <div>
-            <label className="block text-2xs font-semibold text-slate-500 mb-1">System Role</label>
+            <label className="block text-2xs font-semibold text-slate-500 mb-1">Role</label>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             >
               <option value="ALL">All Roles</option>
-              <option value="STAFF">STAFF</option>
-              <option value="MHO_ADMIN">MHO_ADMIN</option>
-              <option value="MHO_HEAD">MHO_HEAD</option>
-              <option value="LGU_HR">LGU_HR</option>
+              <option value="MHO_HEAD">MHO Head</option>
+              <option value="MHO_ADMIN">MHO Admin</option>
+              <option value="LGU_HR">LGU HR</option>
+              <option value="STAFF">Staff</option>
             </select>
           </div>
 
-          {/* Status */}
           <div>
-            <label className="block text-2xs font-semibold text-slate-500 mb-1">Account State</label>
+            <label className="block text-2xs font-semibold text-slate-500 mb-1">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             >
-              <option value="ALL">All Accounts</option>
-              <option value="ACTIVE">Active Accounts</option>
-              <option value="INACTIVE">Deactivated Accounts</option>
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active Only</option>
+              <option value="INACTIVE">Inactive Only</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-card overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+      {/* Main Table */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+        <div className="p-3.5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-teal-700" />
-            <h2 className="text-sm font-bold text-slate-800">
-              Registered Personnel ({filteredProfiles.length})
+            <UserCog className="h-4 w-4 text-teal-700" />
+            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              Configured Profiles ({filteredProfiles.length})
             </h2>
           </div>
-          <span className="text-xs text-slate-400">
-            Password management will be handled by Supabase Auth in production
-          </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
-              <tr>
-                <th className="px-4 py-3">Employee</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Position</th>
-                <th className="px-4 py-3 text-center">Vacation Credits</th>
-                <th className="px-4 py-3 text-center">Sick Credits</th>
-                <th className="px-4 py-3 text-center">Emergency Credits</th>
-                <th className="px-4 py-3 text-center">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredProfiles.length === 0 ? (
+        {isLoading ? (
+          <LoadingState message="Loading registered users..." />
+        ) : errorMessage ? (
+          <ErrorState message={errorMessage} onRetry={fetchProfiles} />
+        ) : filteredProfiles.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              title="No users found"
+              description="No user records match the filter criteria."
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200 text-2xs">
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-400">
-                    No employee accounts match the query criteria.
-                  </td>
+                  <th className="px-4 py-2.5">User</th>
+                  <th className="px-4 py-2.5">Role</th>
+                  <th className="px-4 py-2.5">Position</th>
+                  <th className="px-4 py-2.5 text-center">Vacation</th>
+                  <th className="px-4 py-2.5 text-center">Sick</th>
+                  <th className="px-4 py-2.5 text-center">Emergency</th>
+                  <th className="px-4 py-2.5">Status</th>
+                  <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
-              ) : (
-                filteredProfiles.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-4 py-3">
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {filteredProfiles.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-2.5">
                       <div className="font-semibold text-slate-900">{p.full_name}</div>
                       <div className="text-2xs text-slate-400">{p.email}</div>
                     </td>
-
-                    <td className="px-4 py-3">
-                      <span className="rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-2xs font-bold text-slate-700">
+                    <td className="px-4 py-2.5">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-2xs font-bold text-slate-700">
                         {p.role}
                       </span>
                     </td>
-
-                    <td className="px-4 py-3 text-slate-600">{p.position || '—'}</td>
-
-                    <td className="px-4 py-3 text-center font-bold text-teal-800">
-                      {p.vacation_credits.toFixed(2)}
+                    <td className="px-4 py-2.5 text-2xs text-slate-600">{p.position || '—'}</td>
+                    <td className="px-4 py-2.5 text-center font-bold text-teal-800 text-2xs">
+                      {p.vacation_credits.toFixed(1)}
                     </td>
-
-                    <td className="px-4 py-3 text-center font-bold text-emerald-700">
-                      {p.sick_credits.toFixed(2)}
+                    <td className="px-4 py-2.5 text-center font-bold text-emerald-700 text-2xs">
+                      {p.sick_credits.toFixed(1)}
                     </td>
-
-                    <td className="px-4 py-3 text-center font-bold text-amber-700">
-                      {p.emergency_credits.toFixed(2)}
+                    <td className="px-4 py-2.5 text-center font-bold text-amber-700 text-2xs">
+                      {p.emergency_credits.toFixed(1)}
                     </td>
-
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-2.5">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-2xs font-semibold ${
                           p.is_active
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-slate-200 text-slate-600'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200'
                         }`}
                       >
-                        {p.is_active ? 'Active' : 'Deactivated'}
+                        {p.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       <button
                         onClick={() => handleOpenEdit(p)}
-                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-2xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-2xs font-medium text-slate-700 hover:bg-slate-50"
                       >
-                        <Edit2 className="h-3 w-3 text-slate-500" /> Edit & Adjust Credits
+                        <Edit2 className="h-3 w-3" /> Edit
                       </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Create / Edit Modal Dialog */}
+      {/* Create / Edit Modal */}
       {modalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-5">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <UserCog className="h-5 w-5 text-teal-700" />
-                <h3 className="text-base font-bold text-slate-900">
-                  {modalMode === 'CREATE' ? 'Provision New Employee' : `Edit Account: ${selectedProfile?.full_name}`}
-                </h3>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h3 className="text-sm font-bold text-slate-900">
+                {modalMode === 'CREATE' ? 'Add User Account' : `Edit User: ${selectedProfile?.full_name}`}
+              </h3>
               <button
+                type="button"
                 onClick={handleCloseModal}
-                className="text-slate-400 hover:text-slate-600 rounded-md p-1"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-4 text-xs">
-              {/* Personal Info */}
+            <form onSubmit={handleSaveUser} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
@@ -513,62 +448,58 @@ export const UserManagementScreen: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Maria Santos"
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Email *</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. msantos@mho.gov.ph"
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                    placeholder="e.g. maria@mho.gov.ph"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   />
                 </div>
               </div>
 
-              {/* Role & Position */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">System Role *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Role *</label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   >
-                    <option value="STAFF">STAFF (Health Worker / Personnel)</option>
-                    <option value="MHO_ADMIN">MHO_ADMIN (System & User Administrator)</option>
-                    <option value="MHO_HEAD">MHO_HEAD (Office Head / Executive)</option>
-                    <option value="LGU_HR">LGU_HR (Human Resource Auditor)</option>
+                    <option value="STAFF">STAFF (Health Personnel)</option>
+                    <option value="MHO_ADMIN">MHO_ADMIN (Administrative Officer)</option>
+                    <option value="MHO_HEAD">MHO_HEAD (Municipal Health Officer)</option>
+                    <option value="LGU_HR">LGU_HR (Human Resource)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Position / Designation</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Position Title</label>
                   <input
                     type="text"
                     value={position}
                     onChange={(e) => setPosition(e.target.value)}
                     placeholder="e.g. Rural Health Midwife II"
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                   />
                 </div>
               </div>
 
               {/* Leave Credits Calibration Box */}
-              <div className="rounded-xl border border-teal-100 bg-teal-50/50 p-4 space-y-3">
-                <div className="flex items-center gap-1.5 font-bold text-teal-900">
-                  <CreditCard className="h-4 w-4 text-teal-700" />
-                  Leave Credit Allocations & Balances
+              <div className="rounded-xl border border-teal-100 bg-teal-50/50 p-3.5 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-teal-900 text-2xs">
+                  <CreditCard className="h-3.5 w-3.5 text-teal-700" />
+                  Leave Credit Allocations
                 </div>
-                <p className="text-2xs text-slate-500">
-                  Direct adjustments modify both `public.profiles` and the `public.leave_balances` ledger.
-                </p>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2.5">
                   <div>
-                    <label className="block font-semibold text-teal-900 mb-1">Vacation (VL)</label>
+                    <label className="block font-semibold text-teal-900 text-2xs mb-1">Vacation (VL)</label>
                     <input
                       type="number"
                       step="0.5"
@@ -577,11 +508,11 @@ export const UserManagementScreen: React.FC = () => {
                       required
                       value={vacationCredits}
                       onChange={(e) => setVacationCredits(parseFloat(e.target.value) || 0)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-bold text-teal-950 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-teal-950 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-emerald-800 mb-1">Sick (SL)</label>
+                    <label className="block font-semibold text-emerald-800 text-2xs mb-1">Sick (SL)</label>
                     <input
                       type="number"
                       step="0.5"
@@ -590,11 +521,11 @@ export const UserManagementScreen: React.FC = () => {
                       required
                       value={sickCredits}
                       onChange={(e) => setSickCredits(parseFloat(e.target.value) || 0)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-bold text-emerald-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-emerald-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-amber-800 mb-1">Emergency (EL)</label>
+                    <label className="block font-semibold text-amber-800 text-2xs mb-1">Emergency (EL)</label>
                     <input
                       type="number"
                       step="0.5"
@@ -603,13 +534,12 @@ export const UserManagementScreen: React.FC = () => {
                       required
                       value={emergencyCredits}
                       onChange={(e) => setEmergencyCredits(parseFloat(e.target.value) || 0)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-bold text-amber-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-amber-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Account State Flag */}
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
@@ -618,25 +548,24 @@ export const UserManagementScreen: React.FC = () => {
                   onChange={(e) => setIsActive(e.target.checked)}
                   className="rounded text-teal-700 focus:ring-teal-700 accent-teal-700"
                 />
-                <label htmlFor="isActiveToggle" className="font-semibold text-slate-800 cursor-pointer">
-                  Account is Active (eligible for duty scheduling and portal filings)
+                <label htmlFor="isActiveToggle" className="font-semibold text-slate-800 cursor-pointer text-xs">
+                  Account is Active
                 </label>
               </div>
 
-              {/* Form Buttons */}
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   disabled={isSubmitting}
                   onClick={handleCloseModal}
-                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  className="rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-5 py-2 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-1.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 transition-colors"
                 >
                   {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   {modalMode === 'CREATE' ? 'Create Account' : 'Save Changes'}
@@ -649,4 +578,5 @@ export const UserManagementScreen: React.FC = () => {
     </div>
   )
 }
+
 export default UserManagementScreen
