@@ -6,10 +6,9 @@ import { Layout } from './components/Layout'
 // Screens
 import { LoginScreen } from './pages/auth/LoginScreen'
 import { ExecutiveDashboard } from './pages/dashboard/ExecutiveDashboard'
-import { ApplyLeaveScreen } from './pages/leaves/ApplyLeaveScreen'
+import { LeaveFilingPage } from './pages/leaves/LeaveFilingPage'
 import { ApprovalQueueScreen } from './pages/leaves/ApprovalQueueScreen'
 import { LeaveMonitorHub } from './pages/admin/LeaveMonitorHub'
-import { AdminFileLeaveScreen } from './pages/admin/AdminFileLeaveScreen'
 import { PersonnelDirectoryScreen } from './pages/admin/PersonnelDirectoryScreen'
 import { UserManagementScreen } from './pages/admin/UserManagementScreen'
 import { AuditLogsScreen } from './pages/reports/AuditLogsScreen'
@@ -36,10 +35,16 @@ export function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ExecutiveDashboard />} />
-              <Route path="/leaves/apply" element={<ApplyLeaveScreen />} />
+              
+              {/* Leave Filing (Self & Admin On-Behalf) */}
+              <Route path="/leaves/apply" element={<LeaveFilingPage />} />
+              <Route path="/admin/leaves/file" element={<LeaveFilingPage />} />
+              
+              {/* Approval & Monitor */}
               <Route path="/approvals" element={<ApprovalQueueScreen />} />
               <Route path="/admin/leaves" element={<LeaveMonitorHub />} />
-              <Route path="/admin/leaves/file" element={<AdminFileLeaveScreen />} />
+              
+              {/* Personnel & Administration */}
               <Route path="/admin/personnel" element={<PersonnelDirectoryScreen />} />
               <Route path="/admin/users" element={<UserManagementScreen />} />
               <Route path="/reports/audit-logs" element={<AuditLogsScreen />} />
