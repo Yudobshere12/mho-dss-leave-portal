@@ -7,6 +7,7 @@ export type Json =
   | Json[]
 
 export type UserRole = 'STAFF' | 'MHO_ADMIN' | 'MHO_HEAD' | 'LGU_HR'
+export type UserStatus = 'pending' | 'approved' | 'rejected'
 
 export type LeaveType =
   | 'Vacation Leave'
@@ -28,6 +29,10 @@ export interface Database {
           full_name: string
           email: string
           role: UserRole
+          status: UserStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          avatar_url?: string | null
           position: string | null
           vacation_credits: number
           sick_credits: number
@@ -41,6 +46,10 @@ export interface Database {
           full_name: string
           email: string
           role?: UserRole
+          status?: UserStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          avatar_url?: string | null
           position?: string | null
           vacation_credits?: number
           sick_credits?: number
@@ -54,6 +63,10 @@ export interface Database {
           full_name?: string
           email?: string
           role?: UserRole
+          status?: UserStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          avatar_url?: string | null
           position?: string | null
           vacation_credits?: number
           sick_credits?: number
@@ -294,14 +307,23 @@ export interface Database {
       reject_leave: {
         Args: {
           p_leave_id: number
-          p_admin_id: string
+          p_admin_id?: string | null
           p_remarks?: string | null
         }
         Returns: Database['public']['Tables']['leave_applications']['Row']
       }
+      review_user: {
+        Args: {
+          p_user_id: string
+          p_status: UserStatus
+          p_role?: UserRole | null
+        }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
     }
     Enums: {
       user_role: UserRole
+      user_status: UserStatus
       leave_type: LeaveType
       leave_status: LeaveStatus
     }
