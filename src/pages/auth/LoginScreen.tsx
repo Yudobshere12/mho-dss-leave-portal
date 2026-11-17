@@ -3,23 +3,20 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { motion } from 'framer-motion'
 import {
   Mail,
   Lock,
   Eye,
   EyeOff,
-  Shield,
-  HeartPulse,
-  Calendar,
-  Users,
-  ClipboardList,
   AlertCircle,
   Loader2,
   ArrowRight,
 } from 'lucide-react'
 import { signIn } from '../../lib/auth'
-import mhoLogoPng from '../../assets/MHO_logo.png'
-import lguSeal from '../../assets/lgu-seal.svg'
+import mhoLogoPng from '../../assets/MHO_logo_cropped.png'
+import lguMhoLogo from '../../assets/LGU_MHO_logo.jpg'
+import visualBesideLogin from '../../assets/Visual_beside_login.jpg'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
@@ -64,93 +61,107 @@ export const LoginScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-teal-50/70 via-slate-50 to-white flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
-      {/* Top Header Section */}
-      <div className="flex flex-col items-center text-center mb-8 max-w-lg">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-16 w-16 rounded-full bg-white shadow-soft p-1.5 flex items-center justify-center border border-slate-100 overflow-hidden">
-            <img src={mhoLogoPng} alt="MHO Logo" className="h-full w-full object-contain" />
-          </div>
-          <span className="text-xl font-bold text-slate-300">/</span>
-          <div className="h-16 w-16 rounded-full bg-white shadow-soft p-2 flex items-center justify-center border border-slate-100">
-            <img src={lguSeal} alt="LGU Seal" className="h-full w-full object-contain" />
-          </div>
-        </div>
+    <div className="relative min-h-screen w-full bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 overflow-hidden">
+      {/* Animated Glowing / Floating Background Orbs */}
+      <motion.div
+        animate={{
+          x: [0, 60, -40, 0],
+          y: [0, -70, 30, 0],
+          scale: [1, 1.25, 0.9, 1],
+        }}
+        transition={{
+          duration: 18,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-teal-500/25 blur-3xl pointer-events-none"
+      />
+      <motion.div
+        animate={{
+          x: [0, -80, 50, 0],
+          y: [0, 80, -40, 0],
+          scale: [1, 1.3, 0.95, 1],
+        }}
+        transition={{
+          duration: 22,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        className="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"
+      />
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.15, 0.3, 0.15],
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[42rem] h-[42rem] rounded-full bg-teal-700/20 blur-[120px] pointer-events-none"
+      />
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          MHO Leave DSS Portal
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-          Municipal Health Office Leave Management & Decision Support
-        </p>
-      </div>
+      {/* Decorative Grid Mesh */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)',
+          backgroundSize: '32px 32px',
+        }}
+      />
 
       {/* Main Split Card */}
-      <div className="w-full max-w-[1100px] rounded-2xl bg-white shadow-soft border border-slate-100 overflow-hidden grid grid-cols-1 md:grid-cols-2">
-        {/* Left Half: Teal Gradient Panel */}
-        <div className="relative bg-gradient-to-br from-teal-700 to-teal-800 text-white p-8 sm:p-12 flex flex-col justify-between overflow-hidden min-h-[380px] md:min-h-[520px]">
-          {/* Subtle Background Pattern Elements */}
-          <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-teal-600/20 pointer-events-none blur-2xl" />
-          <div className="absolute -left-16 -bottom-16 w-64 h-64 rounded-full bg-teal-900/30 pointer-events-none blur-2xl" />
-
-          {/* Top Pill Badge */}
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-md px-3.5 py-1 text-xs font-semibold text-teal-50 border border-white/20">
-              <Shield className="h-3.5 w-3.5 text-teal-200" />
-              <span>Municipal Health Office</span>
-            </div>
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="relative z-10 w-full max-w-[1100px] rounded-3xl bg-white shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2"
+      >
+        {/* Left Half: Visual Image Panel with Blurred Image & Overlaid Title */}
+        <div className="relative min-h-[420px] md:min-h-[560px] overflow-hidden flex flex-col justify-start p-6 sm:p-10 text-white">
+          {/* Background Image with blur, zoom scale, and dark teal gradient overlay */}
+          <div className="absolute inset-0 overflow-hidden">
+            <img
+              src={visualBesideLogin}
+              alt="Municipal Health Office Visual"
+              className="h-full w-full object-cover scale-105 blur-[3px]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-teal-950/85 via-teal-900/65 to-slate-950/85 backdrop-blur-[2px]" />
           </div>
 
-          {/* Center Cluster: Health-themed central circle + 4 satellite orbs */}
-          <div className="relative z-10 my-8 flex items-center justify-center">
-            <div className="relative flex items-center justify-center">
-              {/* Central White Circle */}
-              <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-full bg-white text-teal-700 shadow-soft flex items-center justify-center border-4 border-teal-500/30">
-                <HeartPulse className="h-14 w-14 sm:h-16 sm:w-16 animate-pulse" />
-              </div>
-
-              {/* 4 Satellite Orbs */}
-              {/* Top: Calendar */}
-              <div
-                className="absolute -top-4 sm:-top-5 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white text-teal-700 shadow-soft border border-teal-100"
-                title="Scheduling & Calendar"
-              >
-                <Calendar className="h-5 w-5" />
-              </div>
-
-              {/* Right: Users */}
-              <div
-                className="absolute -right-4 sm:-right-5 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white text-teal-700 shadow-soft border border-teal-100"
-                title="Duty Staff Coverage"
-              >
-                <Users className="h-5 w-5" />
-              </div>
-
-              {/* Bottom: ClipboardList */}
-              <div
-                className="absolute -bottom-4 sm:-bottom-5 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white text-teal-700 shadow-soft border border-teal-100"
-                title="Leave Application Logging"
-              >
-                <ClipboardList className="h-5 w-5" />
-              </div>
-
-              {/* Left: HeartPulse */}
-              <div
-                className="absolute -left-4 sm:-left-5 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white text-teal-700 shadow-soft border border-teal-100"
-                title="Clinical Decision Support"
-              >
-                <HeartPulse className="h-5 w-5" />
-              </div>
+          {/* Overlaid Logos & Narrative */}
+          <div className="relative z-10 space-y-4 pt-1 sm:pt-2">
+            {/* Icon-style logos above texts */}
+            <div className="inline-flex items-center gap-3">
+              <img
+                src={mhoLogoPng}
+                alt="MHO Logo"
+                className="h-14 w-auto object-contain drop-shadow-lg"
+              />
+              <span className="text-sm font-semibold text-white/40">/</span>
+              <img
+                src={lguMhoLogo}
+                alt="LGU MHO Logo"
+                className="h-10 w-10 object-contain rounded-full drop-shadow-md"
+              />
             </div>
-          </div>
 
-          {/* Bottom Narrative */}
-          <div className="relative z-10 border-t border-teal-600/60 pt-4">
-            <div className="font-bold text-sm sm:text-base text-white">
-              Empowering health office staff
-            </div>
-            <div className="text-xs text-teal-100 mt-1 leading-relaxed">
-              Streamlining leave approvals and staffing coverage for the health office.
+            <div className="space-y-3">
+              <div className="inline-block px-3 py-0.5 rounded-full bg-teal-400/20 border border-teal-300/30 text-teal-200 text-2xs font-semibold backdrop-blur-sm tracking-wide uppercase">
+                Municipal Health Office
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight drop-shadow-md leading-tight">
+                MHO Leave DSS Portal
+              </h1>
+              <p className="text-sm sm:text-base text-teal-100/90 font-normal leading-relaxed drop-shadow-sm max-w-sm">
+                Municipal Health Office Leave Management &amp; Decision Support System
+              </p>
+              <div className="pt-1 flex items-center gap-2 text-xs text-teal-200/80">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Streamlining duty coverage &amp; leave logging</span>
+              </div>
             </div>
           </div>
         </div>
@@ -319,7 +330,7 @@ export const LoginScreen: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
