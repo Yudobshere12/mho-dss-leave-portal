@@ -7,15 +7,12 @@ import {
   RotateCcw,
   Eye,
   PlusCircle,
-  CheckCircle2,
-  XCircle,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useDevRole } from '../../context/DevRoleContext'
 import { supabase } from '../../lib/supabase'
 import { exportToCsv } from '../../utils/csv'
 import { DssBadge } from '../../components/DssBadge'
-import { DecisionDialog } from '../../components/DecisionDialog'
 import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
@@ -27,7 +24,6 @@ type LeaveApplication = Database['public']['Tables']['leave_applications']['Row'
 export const LeaveMonitorHub: React.FC = () => {
   const { currentUser, availableProfiles } = useDevRole()
 
-  const canDecide = ['MHO_ADMIN', 'MHO_HEAD'].includes(currentUser.role)
   const isStaff = currentUser.role === 'STAFF'
 
   const [records, setRecords] = useState<LeaveApplication[]>([])
@@ -41,11 +37,6 @@ export const LeaveMonitorHub: React.FC = () => {
   const [employeeFilter, setEmployeeFilter] = useState<string>('ALL')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-
-  // Decision Modal State
-  const [selectedApp, setSelectedApp] = useState<LeaveApplication | null>(null)
-  const [decisionAction, setDecisionAction] = useState<'APPROVE' | 'REJECT' | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
 
   // Details Modal
   const [viewDetailsApp, setViewDetailsApp] = useState<LeaveApplication | null>(null)
@@ -123,35 +114,6 @@ export const LeaveMonitorHub: React.FC = () => {
       { key: 'admin_remarks', label: 'Admin Remarks' },
       { key: 'created_at', label: 'Date Filed' },
     ])
-  }
-
-  const handleConfirmDecision = async (applicationId: number, remarks: string) => {
-    setIsProcessing(true)
-    try {
-      if (decisionAction === 'APPROVE') {
-        const { error } = await supabase.rpc('approve_leave', {
-          p_leave_id: applicationId,
-          p_admin_id: currentUser.id,
-          p_remarks: remarks || null,
-        })
-        if (error) throw new Error(error.message)
-      } else {
-        const { error } = await supabase.rpc('reject_leave', {
-          p_leave_id: applicationId,
-          p_admin_id: currentUser.id,
-          p_remarks: remarks || null,
-        })
-        if (error) throw new Error(error.message)
-      }
-
-      await fetchRecords()
-      setSelectedApp(null)
-      setDecisionAction(null)
-    } catch (err: unknown) {
-      console.warn('Decision RPC error:', err)
-    } finally {
-      setIsProcessing(false)
-    }
   }
 
   return (
@@ -347,39 +309,14 @@ export const LeaveMonitorHub: React.FC = () => {
                     <td className="px-4 py-2.5">
                       <DssBadge recommendation={r.dss_recommendation} />
                     </td>
-                    <td className="px-4 py-2.5 text-right space-x-1 whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
                       <button
                         onClick={() => setViewDetailsApp(r)}
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-2xs font-semibold text-slate-600 hover:bg-slate-100"
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2.5 py-1 text-2xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                         title="View Details"
                       >
                         <Eye className="h-3 w-3" /> Details
                       </button>
-
-                      {canDecide && r.status === 'PENDING' && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setSelectedApp(r)
-                              setDecisionAction('APPROVE')
-                            }}
-                            className="inline-flex items-center gap-0.5 rounded-full bg-emerald-600 px-2 py-1 text-2xs font-semibold text-white hover:bg-emerald-700 shadow-2xs"
-                            title="Approve"
-                          >
-                            <CheckCircle2 className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedApp(r)
-                              setDecisionAction('REJECT')
-                            }}
-                            className="inline-flex items-center gap-0.5 rounded-full bg-red-600 px-2 py-1 text-2xs font-semibold text-white hover:bg-red-700 shadow-2xs"
-                            title="Reject"
-                          >
-                            <XCircle className="h-3 w-3" />
-                          </button>
-                        </>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -388,19 +325,6 @@ export const LeaveMonitorHub: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Decision Dialog */}
-      <DecisionDialog
-        application={selectedApp}
-        action={decisionAction}
-        isOpen={Boolean(selectedApp && decisionAction)}
-        isProcessing={isProcessing}
-        onClose={() => {
-          setSelectedApp(null)
-          setDecisionAction(null)
-        }}
-        onConfirm={handleConfirmDecision}
-      />
 
       {/* View Details Modal */}
       {viewDetailsApp && (
