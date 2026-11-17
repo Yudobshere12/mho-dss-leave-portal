@@ -3,19 +3,17 @@ import { exportToCsv } from './csv'
 
 describe('exportToCsv utility', () => {
   let createdUrl: string | null = null
-  let clicked = false
   let appendedElement: HTMLElement | null = null
   let removedElement: HTMLElement | null = null
 
   beforeEach(() => {
-    clicked = false
     createdUrl = null
     appendedElement = null
     removedElement = null
 
     // Mock URL.createObjectURL and URL.revokeObjectURL
     vi.stubGlobal('URL', {
-      createObjectURL: vi.fn((blob: Blob) => {
+      createObjectURL: vi.fn((_blob: Blob) => {
         createdUrl = 'blob:mock-url'
         return createdUrl
       }),
