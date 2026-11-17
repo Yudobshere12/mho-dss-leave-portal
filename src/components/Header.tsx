@@ -1,13 +1,28 @@
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useDevRole } from '../context/DevRoleContext'
-import { UserCheck, Menu, User } from 'lucide-react'
+import { UserCheck, Menu, User, ChevronDown } from 'lucide-react'
 
 interface HeaderProps {
   onToggleSidebar?: () => void
 }
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
-  const { currentUser } = useDevRole()
+  const { currentUser, availableProfiles, setCurrentUser } = useDevRole()
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false)
+  const roleDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        roleDropdownRef.current &&
+        !roleDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsRoleDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -36,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </button>
         )}
 
+        {/* Current Active Role Badge */}
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getRoleBadgeColor(
             currentUser.role
@@ -46,7 +62,72 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        {/* Switch Role Dropdown in Header */}
+        <div className="relative" ref={roleDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsRoleDropdownOpen((prev) => !prev)}
+            aria-label={`Switch acting role. Currently ${currentUser.role}`}
+            aria-haspopup="listbox"
+            aria-expanded={isRoleDropdownOpen}
+            className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50/80 px-3 py-1 text-xs font-semibold text-teal-900 hover:bg-teal-100/70 transition-colors focus:outline-hidden focus:ring-2 focus:ring-teal-700/30"
+          >
+            <span className="text-2xs text-teal-700 font-medium">Switch Role:</span>
+            <span>{currentUser.role}</span>
+            <ChevronDown
+              className={`h-3 w-3 text-teal-700 transition-transform duration-200 ${
+                isRoleDropdownOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isRoleDropdownOpen && (
+            <div
+              role="listbox"
+              aria-label="Select simulated user profile"
+              className="absolute right-0 top-full z-50 mt-1.5 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-card"
+            >
+              <div className="px-2.5 py-1 text-3xs font-bold text-slate-400 uppercase tracking-wider">
+                Simulate Role (Dev Preview)
+              </div>
+              <div className="space-y-0.5 mt-0.5 max-h-60 overflow-y-auto">
+                {availableProfiles.map((p) => {
+                  const isSelected = p.id === currentUser.id
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        setCurrentUser(p)
+                        setIsRoleDropdownOpen(false)
+                      }}
+                      className={`w-full rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
+                        isSelected
+                          ? 'bg-teal-700 text-white font-semibold'
+                          : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-semibold truncate">{p.full_name}</div>
+                      <div
+                        className={`text-2xs truncate ${
+                          isSelected ? 'text-teal-100' : 'text-slate-400'
+                        }`}
+                      >
+                        {p.role} &bull; {p.position || 'Staff'}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="h-4 w-px bg-slate-200" />
+
         {/* User profile info */}
         <div className="flex items-center gap-2.5">
           <div className="hidden text-right md:block">
