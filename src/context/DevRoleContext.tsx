@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { Database } from '../types/database.types'
-import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -10,6 +10,7 @@ export const FALLBACK_PROFILES: Profile[] = [
     full_name: 'Dr. Maria Clara Salcedo',
     email: 'head@mho.gov.ph',
     role: 'MHO_HEAD',
+    status: 'approved',
     position: 'Municipal Health Officer',
     vacation_credits: 15.0,
     sick_credits: 15.0,
@@ -23,6 +24,7 @@ export const FALLBACK_PROFILES: Profile[] = [
     full_name: 'Roberto Gomez',
     email: 'admin@mho.gov.ph',
     role: 'MHO_ADMIN',
+    status: 'approved',
     position: 'Administrative Officer V',
     vacation_credits: 15.0,
     sick_credits: 15.0,
@@ -36,6 +38,7 @@ export const FALLBACK_PROFILES: Profile[] = [
     full_name: 'Elena Rostata',
     email: 'hr@mho.gov.ph',
     role: 'LGU_HR',
+    status: 'approved',
     position: 'Human Resource Management Officer II',
     vacation_credits: 15.0,
     sick_credits: 15.0,
@@ -49,6 +52,7 @@ export const FALLBACK_PROFILES: Profile[] = [
     full_name: 'Juan dela Cruz',
     email: 'staff1@mho.gov.ph',
     role: 'STAFF',
+    status: 'approved',
     position: 'Staff Nurse II',
     vacation_credits: 12.0,
     sick_credits: 15.0,
@@ -62,6 +66,7 @@ export const FALLBACK_PROFILES: Profile[] = [
     full_name: 'Maria Santos',
     email: 'staff2@mho.gov.ph',
     role: 'STAFF',
+    status: 'approved',
     position: 'Rural Health Midwife I',
     vacation_credits: 15.0,
     sick_credits: 13.0,
@@ -75,6 +80,7 @@ export const FALLBACK_PROFILES: Profile[] = [
     full_name: 'Antonio Luna',
     email: 'staff3@mho.gov.ph',
     role: 'STAFF',
+    status: 'approved',
     position: 'Medical Technologist I',
     vacation_credits: 15.0,
     sick_credits: 15.0,
@@ -97,54 +103,44 @@ const DevRoleContext = createContext<DevRoleContextType | undefined>(undefined)
 const LOCAL_STORAGE_KEY = 'mho_dss_dev_acting_user_id'
 
 export const DevRoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [availableProfiles, setAvailableProfiles] = useState<Profile[]>(FALLBACK_PROFILES)
-  const [currentUser, setCurrentUserState] = useState<Profile>(FALLBACK_PROFILES[1]) // Default to Admin
-  const [isLoading, setIsLoading] = useState(true)
+  const { profile: authProfile, loading: authLoading } = useAuth()
+  const [availableProfiles] = useState<Profile[]>(FALLBACK_PROFILES)
+  const [devSimulatedUser, setDevSimulatedUser] = useState<Profile | null>(null)
 
+  // In development, check if developer manually chose a simulated user in localStorage
   useEffect(() => {
-    async function fetchProfiles() {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('role', { ascending: false })
-
-        if (error) {
-          console.warn('Could not load profiles from Supabase, using fallback roster:', error.message)
-          setAvailableProfiles(FALLBACK_PROFILES)
-        } else if (data && data.length > 0) {
-          setAvailableProfiles(data)
-          const savedId = localStorage.getItem(LOCAL_STORAGE_KEY)
-          const found = data.find((p) => p.id === savedId)
-          if (found) {
-            setCurrentUserState(found)
-          } else {
-            setCurrentUserState(data[0])
-          }
+    if (import.meta.env.DEV) {
+      const savedId = localStorage.getItem(LOCAL_STORAGE_KEY)
+      if (savedId) {
+        const found = FALLBACK_PROFILES.find((p) => p.id === savedId)
+        if (found) {
+          setDevSimulatedUser(found)
         }
-      } catch (err) {
-        console.warn('Profiles fetch error, using fallback roster:', err)
-        setAvailableProfiles(FALLBACK_PROFILES)
-      } finally {
-        setIsLoading(false)
       }
     }
-
-    fetchProfiles()
   }, [])
 
+  // Production or when real authenticated profile exists: Real profile drives the user role!
+  // In DEV: allows simulated user only if explicit dev setting was saved and no real session,
+  // or user selects one in dev mode.
+  const resolvedCurrentUser: Profile =
+    authProfile ??
+    (import.meta.env.DEV && devSimulatedUser ? devSimulatedUser : FALLBACK_PROFILES[0])
+
   const setCurrentUser = (user: Profile) => {
-    setCurrentUserState(user)
-    localStorage.setItem(LOCAL_STORAGE_KEY, user.id)
+    if (import.meta.env.DEV) {
+      setDevSimulatedUser(user)
+      localStorage.setItem(LOCAL_STORAGE_KEY, user.id)
+    }
   }
 
   return (
     <DevRoleContext.Provider
       value={{
-        currentUser,
+        currentUser: resolvedCurrentUser,
         availableProfiles,
         setCurrentUser,
-        isLoading,
+        isLoading: authLoading,
       }}
     >
       {children}
