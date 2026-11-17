@@ -229,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
   useEffect(() => {
     setIsHovered(false)
     if (onClose) onClose()
-  }, [location.pathname])
+  }, [location.pathname, onClose])
 
   const userInitials =
     currentUser.full_name
