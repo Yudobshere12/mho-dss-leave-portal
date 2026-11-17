@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from './context/AuthContext'
 import { DevRoleProvider } from './context/DevRoleContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 
 // Screens
@@ -26,40 +28,48 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <DevRoleProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Default entry redirects to /login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+      <AuthProvider>
+        <DevRoleProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Default entry redirects to /login */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
 
-            {/* Public routes */}
-            <Route path="/login" element={<LoginScreen />} />
-            <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
-            <Route path="/register" element={<RegisterScreen />} />
+              {/* Public routes */}
+              <Route path="/login" element={<LoginScreen />} />
+              <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
+              <Route path="/register" element={<RegisterScreen />} />
 
-            {/* Protected Portal Layout */}
-            <Route element={<Layout />}>
-              <Route path="/dashboard" element={<ExecutiveDashboard />} />
-              
-              {/* Leave Filing (Self & Admin On-Behalf) */}
-              <Route path="/leaves/apply" element={<LeaveFilingPage />} />
-              <Route path="/admin/leaves/file" element={<LeaveFilingPage />} />
-              
-              {/* Approval & Monitor */}
-              <Route path="/approvals" element={<ApprovalQueueScreen />} />
-              <Route path="/admin/leaves" element={<LeaveMonitorHub />} />
-              
-              {/* Personnel & Administration */}
-              <Route path="/admin/personnel" element={<PersonnelDirectoryScreen />} />
-              <Route path="/admin/users" element={<UserManagementScreen />} />
-              <Route path="/reports/audit-logs" element={<AuditLogsScreen />} />
-            </Route>
+              {/* Protected Portal Layout */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard" element={<ExecutiveDashboard />} />
+                
+                {/* Leave Filing (Self & Admin On-Behalf) */}
+                <Route path="/leaves/apply" element={<LeaveFilingPage />} />
+                <Route path="/admin/leaves/file" element={<LeaveFilingPage />} />
+                
+                {/* Approval & Monitor */}
+                <Route path="/approvals" element={<ApprovalQueueScreen />} />
+                <Route path="/admin/leaves" element={<LeaveMonitorHub />} />
+                
+                {/* Personnel & Administration */}
+                <Route path="/admin/personnel" element={<PersonnelDirectoryScreen />} />
+                <Route path="/admin/users" element={<UserManagementScreen />} />
+                <Route path="/reports/audit-logs" element={<AuditLogsScreen />} />
+              </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </DevRoleProvider>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </DevRoleProvider>
+      </AuthProvider>
     </QueryClientProvider>
   )
 }
