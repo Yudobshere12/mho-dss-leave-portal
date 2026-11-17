@@ -11,17 +11,23 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useDevRole } from '../../context/DevRoleContext'
+import { useAuth } from '../../context/AuthContext'
+import { isActionAllowed } from '../../lib/permissions'
 import { countWeekdays } from '../../utils/weekday'
 import { supabase } from '../../lib/supabase'
 import { PageHeader } from '../../components/PageHeader'
+import { NotAuthorizedFallback } from '../../components/NotAuthorizedFallback'
 import type { LeaveType } from '../../types/database.types'
 
 export const LeaveFilingPage: React.FC = () => {
   const { currentUser, availableProfiles } = useDevRole()
+  const { role: authRole } = useAuth()
+  const activeRole = authRole || currentUser.role
 
-  const isAdminOrHead = ['MHO_ADMIN', 'MHO_HEAD'].includes(currentUser.role)
+  const canFileSelf = isActionAllowed(activeRole, 'leave:file_self')
+  const canFileOnBehalf = isActionAllowed(activeRole, 'leave:file_on_behalf')
 
-  // Filing Mode: 'SELF' vs 'ON_BEHALF' (only available if Admin/Head)
+  // Filing Mode: 'SELF' vs 'ON_BEHALF' (only visible to MHO_ADMIN)
   const [filingMode, setFilingMode] = useState<'SELF' | 'ON_BEHALF'>('SELF')
 
   // Selected employee target when filing on behalf
@@ -231,13 +237,23 @@ export const LeaveFilingPage: React.FC = () => {
     }
   }
 
+  if (!canFileSelf && !canFileOnBehalf) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <PageHeader title="Apply for Leave" />
+        <NotAuthorizedFallback message="Your current role (LGU_HR) does not have permission to file leave applications." />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <PageHeader
         title={filingMode === 'ON_BEHALF' ? 'On-Behalf Filing' : 'Apply for Leave'}
       />
 
-      {isAdminOrHead && (
+      {/* Mode Switcher: visible strictly to MHO_ADMIN */}
+      {canFileOnBehalf && (
         <div className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/70 p-2 text-xs">
           <span className="font-semibold text-teal-900 px-2">Mode:</span>
           <button
