@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { NavLink, Link, useLocation } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   FileSignature,
@@ -8,11 +8,11 @@ import {
   Users,
   UserCog,
   FileText,
-  ChevronDown,
   LogOut,
   X,
 } from 'lucide-react'
 import { useDevRole } from '../context/DevRoleContext'
+import { useAuth } from '../context/AuthContext'
 import mhoLogoPng from '../assets/MHO_logo_cropped.png'
 import type { UserRole } from '../types/database.types'
 
@@ -176,6 +176,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const { currentUser } = useDevRole()
+  const { signOut } = useAuth()
   const [isHovered, setIsHovered] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const collapseTimerRef = useRef<number | null>(null)
@@ -273,9 +274,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       {/* Bottom Block */}
       <div className="border-t border-slate-200 p-2 space-y-1">
         {/* Sign Out Action */}
-        <Link
-          to="/login"
-          onClick={isMobile ? onClose : undefined}
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await signOut()
+            } catch (e) {
+              console.error('Sign out error:', e)
+            }
+            if (isMobile && onClose) onClose()
+          }}
           aria-label="Sign Out"
           title={!expanded ? 'Sign Out' : undefined}
           className={`group relative flex items-center h-10 rounded-full text-slate-600 hover:bg-red-50 hover:text-red-700 transition-colors motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-red-500 ${
@@ -292,7 +300,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           >
             Sign Out
           </span>
-        </Link>
+        </button>
 
         {/* Avatar block with user info */}
         <div className="pt-1 border-t border-slate-100">
