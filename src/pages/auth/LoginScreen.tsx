@@ -28,7 +28,7 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export const LoginScreen: React.FC = () => {
   // ── All hooks MUST be called before any early return ──
-  const { session, signInWithGoogle, signUp } = useAuth()
+  const { session, status, signInWithGoogle, signUp } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -45,8 +45,14 @@ export const LoginScreen: React.FC = () => {
     defaultValues: { email: '', password: '', remember: false },
   })
 
-  // ── Early redirect (after all hooks) ──
+  // ── Early redirect based on session & approval status ──
   if (session) {
+    if (status === 'pending') {
+      return <Navigate to="/pending" replace />
+    }
+    if (status === 'rejected') {
+      return <Navigate to="/denied" replace />
+    }
     return <Navigate to="/dashboard" replace />
   }
 
