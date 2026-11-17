@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { useDevRole } from '../context/DevRoleContext'
 import { useAuth } from '../context/AuthContext'
+import { isRouteAllowed } from '../lib/permissions'
+import { supabase } from '../lib/supabase'
 import mhoLogoPng from '../assets/MHO_logo_cropped.png'
 import type { UserRole } from '../types/database.types'
 
@@ -20,68 +22,13 @@ interface NavItemConfig {
   label: string
   to: string
   icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>
-  allowedRoles: UserRole[]
+  badge?: number | null
 }
 
 interface NavGroupConfig {
   title: string
   items: NavItemConfig[]
 }
-
-const NAV_GROUPS: NavGroupConfig[] = [
-  {
-    title: 'Main',
-    items: [
-      {
-        label: 'Dashboard',
-        to: '/dashboard',
-        icon: LayoutDashboard,
-        allowedRoles: ['STAFF', 'MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'],
-      },
-      {
-        label: 'File Leave',
-        to: '/leaves/apply',
-        icon: FileSignature,
-        allowedRoles: ['STAFF', 'MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'],
-      },
-      {
-        label: 'Approval Queue',
-        to: '/approvals',
-        icon: CalendarCheck,
-        allowedRoles: ['MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'],
-      },
-    ],
-  },
-  {
-    title: 'Manage',
-    items: [
-      {
-        label: 'Leave Monitor',
-        to: '/admin/leaves',
-        icon: ClipboardList,
-        allowedRoles: ['MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'],
-      },
-      {
-        label: 'Personnel Directory',
-        to: '/admin/personnel',
-        icon: Users,
-        allowedRoles: ['MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'],
-      },
-      {
-        label: 'User Management',
-        to: '/admin/users',
-        icon: UserCog,
-        allowedRoles: ['MHO_ADMIN'],
-      },
-      {
-        label: 'Audit Logs',
-        to: '/reports/audit-logs',
-        icon: FileText,
-        allowedRoles: ['MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'],
-      },
-    ],
-  },
-]
 
 interface SidebarItemProps {
   item: NavItemConfig
@@ -108,15 +55,26 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, isExpanded, onClick }) 
         }`
       }
     >
-      <div className={`flex shrink-0 items-center justify-center ${isExpanded ? 'w-12 ml-1' : 'w-10'}`}>
+      <div className={`relative flex shrink-0 items-center justify-center ${isExpanded ? 'w-12 ml-1' : 'w-10'}`}>
         <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+        {/* Collapsed Badge indicator */}
+        {!isExpanded && item.badge != null && item.badge > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-3xs font-extrabold text-white ring-2 ring-white">
+            {item.badge}
+          </span>
+        )}
       </div>
       <span
-        className={`whitespace-nowrap text-xs font-medium pr-4 transition-opacity duration-200 motion-reduce:transition-none ${
-          isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'
+        className={`flex-1 whitespace-nowrap text-xs font-medium pr-3 transition-opacity duration-200 motion-reduce:transition-none ${
+          isExpanded ? 'opacity-100 flex items-center justify-between' : 'opacity-0 pointer-events-none hidden'
         }`}
       >
-        {item.label}
+        <span>{item.label}</span>
+        {isExpanded && item.badge != null && item.badge > 0 && (
+          <span className="inline-flex items-center rounded-full bg-amber-500 px-2 py-0.5 text-3xs font-extrabold text-white">
+            {item.badge}
+          </span>
+        )}
       </span>
     </NavLink>
   )
@@ -137,8 +95,9 @@ const SidebarGroup: React.FC<SidebarGroupProps> = ({
   onItemClick,
   showDivider,
 }) => {
+  // Rebuilt: checks the central permissions configuration directly
   const accessibleItems = group.items.filter((item) =>
-    item.allowedRoles.includes(userRole)
+    isRouteAllowed(userRole, item.to)
   )
 
   if (accessibleItems.length === 0) return null
@@ -176,31 +135,95 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const { currentUser } = useDevRole()
-  const { signOut } = useAuth()
+  const { role: authRole, signOut } = useAuth()
+  const activeRole: UserRole = authRole || currentUser.role
+
   const [isHovered, setIsHovered] = useState(false)
-  const [isFocused, setIsFocused] = useState(false)
-  const collapseTimerRef = useRef<number | null>(null)
+  const [pendingUserCount, setPendingUserCount] = useState<number>(0)
   const location = useLocation()
 
-  const isExpandedDesktop = isHovered
-
-  const handleMouseEnter = () => {
-    setIsHovered(true)
-  }
-
-  const handleMouseLeave = () => {
-    setIsHovered(false)
-  }
-
-  const handleFocus = () => {
-    setIsHovered(true)
-  }
-
-  const handleBlur = (e: React.FocusEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget)) {
-      setIsHovered(false)
+  // Fetch pending users count for MHO_ADMIN badge
+  useEffect(() => {
+    if (activeRole !== 'MHO_ADMIN') {
+      setPendingUserCount(0)
+      return
     }
-  }
+
+    let isMounted = true
+
+    const fetchPendingCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending')
+
+        if (!error && count !== null && isMounted) {
+          setPendingUserCount(count)
+        }
+      } catch (e) {
+        console.warn('Error fetching pending users count:', e)
+      }
+    }
+
+    fetchPendingCount()
+
+    const interval = setInterval(fetchPendingCount, 30000)
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [activeRole])
+
+  // Navigation definition (allowedRoles property removed; filtering reads centrally from permissions.ts)
+  const navGroups: NavGroupConfig[] = [
+    {
+      title: 'Main',
+      items: [
+        {
+          label: 'Dashboard',
+          to: '/dashboard',
+          icon: LayoutDashboard,
+        },
+        {
+          label: 'File Leave',
+          to: '/leaves/apply',
+          icon: FileSignature,
+        },
+        {
+          label: 'Approval Queue',
+          to: '/approvals',
+          icon: CalendarCheck,
+        },
+      ],
+    },
+    {
+      title: 'Manage',
+      items: [
+        {
+          label: 'Leave Monitor',
+          to: '/admin/leaves',
+          icon: ClipboardList,
+        },
+        {
+          label: 'Personnel Directory',
+          to: '/admin/personnel',
+          icon: Users,
+        },
+        {
+          label: 'User Management',
+          to: '/admin/users',
+          icon: UserCog,
+          badge: pendingUserCount,
+        },
+        {
+          label: 'Audit Logs',
+          to: '/reports/audit-logs',
+          icon: FileText,
+        },
+      ],
+    },
+  ]
 
   // Auto-close on route change
   useEffect(() => {
@@ -258,11 +281,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           className="flex-1 overflow-y-auto overflow-x-hidden px-2 pt-3 space-y-2"
           aria-label="Sidebar Navigation"
         >
-          {NAV_GROUPS.map((group, idx) => (
+          {navGroups.map((group, idx) => (
             <SidebarGroup
               key={group.title}
               group={group}
-              userRole={currentUser.role}
+              userRole={activeRole}
               isExpanded={expanded}
               onItemClick={isMobile ? onClose : undefined}
               showDivider={idx > 0}
@@ -318,11 +341,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                 expanded ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'
               }`}
             >
-              <div className="text-xs font-semibold text-slate-900 truncate">
+              <div className="truncate text-xs font-bold text-slate-800 leading-tight">
                 {currentUser.full_name}
               </div>
-              <div className="text-2xs text-slate-500 truncate">
-                {currentUser.role}
+              <div className="truncate text-3xs font-medium text-slate-500">
+                {currentUser.role} &bull; {currentUser.position || 'Staff'}
               </div>
             </div>
           </div>
@@ -333,33 +356,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
   return (
     <>
-      {/* Desktop Supabase-style Sidebar: White with teal active pill, no dark sidebar */}
+      {/* Mobile Drawer Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-2xs md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Drawer Sidebar */}
       <aside
-        aria-label="Application sidebar"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        className={`hidden md:block fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-[width,box-shadow] duration-200 motion-reduce:transition-none overflow-x-hidden ${
-          isExpandedDesktop ? 'w-[248px] shadow-soft' : 'w-16'
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-200 ease-in-out md:hidden ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        aria-label="Mobile Navigation"
       >
-        {renderContent(isExpandedDesktop, false)}
+        {renderContent(true, true)}
       </aside>
 
-      {/* Mobile Drawer */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden" role="dialog" aria-modal="true">
-          <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-            onClick={onClose}
-            aria-hidden="true"
-          />
-          <aside className="relative z-50 flex h-full w-[248px] flex-col bg-white border-r border-slate-200 shadow-xl overflow-x-hidden">
-            {renderContent(true, true)}
-          </aside>
-        </div>
-      )}
+      {/* Desktop Persistent Sidebar with Hover Expand */}
+      <aside
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-[width] duration-200 ease-in-out ${
+          isHovered ? 'w-64 shadow-xl' : 'w-16 shadow-xs'
+        }`}
+        aria-label="Desktop Navigation"
+      >
+        {renderContent(isHovered, false)}
+      </aside>
     </>
   )
 }
