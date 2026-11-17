@@ -13,7 +13,7 @@ describe('DssBadge component', () => {
     render(<DssBadge recommendation={text} />)
     expect(screen.getByText(text)).toBeInTheDocument()
     const badge = screen.getByTitle(text)
-    expect(badge).toHaveClass('bg-emerald-100')
+    expect(badge).toHaveClass('bg-emerald-50')
     expect(badge).toHaveClass('text-emerald-800')
   })
 
@@ -28,8 +28,8 @@ describe('DssBadge component', () => {
     render(<DssBadge recommendation={text} />)
     expect(screen.getByText(text)).toBeInTheDocument()
     const badge = screen.getByTitle(text)
-    expect(badge).toHaveClass('bg-amber-100')
-    expect(badge).toHaveClass('text-amber-900')
+    expect(badge).toHaveClass('bg-amber-50')
+    expect(badge).toHaveClass('text-amber-800')
   })
 
   it('renders amber NEEDS REVIEW badge when recommendation contains WARNING', () => {
@@ -37,7 +37,7 @@ describe('DssBadge component', () => {
     render(<DssBadge recommendation={text} />)
     expect(screen.getByText(text)).toBeInTheDocument()
     const badge = screen.getByTitle(text)
-    expect(badge).toHaveClass('bg-amber-100')
+    expect(badge).toHaveClass('bg-amber-50')
   })
 
   it('renders compact NEEDS REVIEW text when compact=true and warning is present', () => {

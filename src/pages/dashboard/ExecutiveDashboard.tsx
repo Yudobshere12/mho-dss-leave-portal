@@ -12,8 +12,10 @@ import {
   Activity,
   AlertTriangle,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useDevRole } from '../../context/DevRoleContext'
+import { useAuth } from '../../context/AuthContext'
+import { isActionAllowed, isRouteAllowed } from '../../lib/permissions'
 import { supabase } from '../../lib/supabase'
 import { exportToCsv } from '../../utils/csv'
 import { PageHeader } from '../../components/PageHeader'
@@ -26,37 +28,59 @@ type LeaveApplication = Database['public']['Tables']['leave_applications']['Row'
 
 export const ExecutiveDashboard: React.FC = () => {
   const { currentUser, availableProfiles } = useDevRole()
+  const { role: authRole } = useAuth()
+  const activeRole = authRole || currentUser.role
+  const location = useLocation()
 
-  const isStaff = currentUser.role === 'STAFF'
-  const isManagement = ['MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'].includes(currentUser.role)
+  // Central permissions checks
+  const isStaff = activeRole === 'STAFF'
+  const canViewAggregate = isActionAllowed(activeRole, 'dashboard:view_aggregate')
+  const canQuickAction = isActionAllowed(activeRole, 'dashboard:quick_actions')
+  const canFileLeave = isRouteAllowed(activeRole, '/leaves/apply')
+  const canApprove = isRouteAllowed(activeRole, '/approvals')
+  const canViewMonitor = isRouteAllowed(activeRole, '/admin/leaves')
 
   const [applications, setApplications] = useState<LeaveApplication[]>([])
   const [minStaffThreshold, setMinStaffThreshold] = useState<number>(2)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [unauthorizedNotice, setUnauthorizedNotice] = useState<string | null>(
+    (location.state as { unauthorizedRoute?: string })?.unauthorizedRoute
+      ? `You do not have permission to access ${(location.state as { unauthorizedRoute?: string }).unauthorizedRoute}. Redirected to dashboard.`
+      : null
+  )
 
   const loadData = async () => {
     setIsLoading(true)
     setErrorMessage(null)
     try {
-      const { data: appsData, error: appsError } = await supabase
+      let query = supabase
         .from('leave_applications')
         .select('*')
         .order('created_at', { ascending: false })
+
+      // STAFF least-privilege: fetch only their own applications
+      if (isStaff) {
+        query = query.eq('user_id', currentUser.id)
+      }
+
+      const { data: appsData, error: appsError } = await query
 
       if (appsError) {
         throw new Error(appsError.message)
       }
       setApplications(appsData || [])
 
-      const { data: settingData } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'min_duty_staff')
-        .single()
+      if (canViewAggregate) {
+        const { data: settingData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'min_duty_staff')
+          .single()
 
-      if (settingData && settingData.value) {
-        setMinStaffThreshold(parseInt(settingData.value, 10))
+        if (settingData && settingData.value) {
+          setMinStaffThreshold(parseInt(settingData.value, 10))
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -164,25 +188,46 @@ export const ExecutiveDashboard: React.FC = () => {
       <PageHeader
         title={isStaff ? 'Employee Leave Overview' : 'Executive Overview'}
         action={
-          <>
-            <button
-              onClick={handleExportSummaryCsv}
-              disabled={applications.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Export CSV
-            </button>
-            <Link
-              to="/leaves/apply"
-              className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
-            >
-              <PlusCircle className="h-3.5 w-3.5" />
-              File Leave
-            </Link>
-          </>
+          canQuickAction ? (
+            <>
+              <button
+                onClick={handleExportSummaryCsv}
+                disabled={applications.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </button>
+              {canFileLeave && (
+                <Link
+                  to="/leaves/apply"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
+                >
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  File Leave
+                </Link>
+              )}
+            </>
+          ) : undefined
         }
       />
+
+      {/* Unauthorized URL Attempt Notification */}
+      {unauthorizedNotice && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-900 shadow-2xs"
+        >
+          <span>{unauthorizedNotice}</span>
+          <button
+            type="button"
+            onClick={() => setUnauthorizedNotice(null)}
+            className="rounded p-1 text-amber-700 hover:bg-amber-100"
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Balance Summary Card */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
@@ -234,7 +279,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="mt-2 text-2xl font-black text-amber-600">{stats.pending}</div>
-              {isManagement && (
+              {canApprove && (
                 <div className="mt-1 text-2xs">
                   <Link to="/approvals" className="font-semibold text-amber-700 hover:underline">
                     Open Queue &rarr;
@@ -376,12 +421,14 @@ export const ExecutiveDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-teal-700" />
                   <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Upcoming Approved Leaves
+                    {isStaff ? 'Your Approved Leaves' : 'Upcoming Approved Leaves'}
                   </h2>
                 </div>
-                <Link to="/admin/leaves" className="text-2xs font-semibold text-teal-700 hover:underline">
-                  View All &rarr;
-                </Link>
+                {canViewMonitor && (
+                  <Link to="/admin/leaves" className="text-2xs font-semibold text-teal-700 hover:underline">
+                    View All &rarr;
+                  </Link>
+                )}
               </div>
 
               {stats.upcomingApproved.length === 0 ? (

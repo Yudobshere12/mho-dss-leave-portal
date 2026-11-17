@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { exportToCsv } from '../../utils/csv'
 import { useDevRole } from '../../context/DevRoleContext'
+import { useAuth } from '../../context/AuthContext'
+import { isActionAllowed } from '../../lib/permissions'
 import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
@@ -123,7 +125,9 @@ const ROLE_COLORS: Record<string, string> = {
 export const PersonnelDirectoryScreen: React.FC = () => {
   const navigate = useNavigate()
   const { currentUser } = useDevRole()
-  const isPrivileged = ['MHO_HEAD', 'MHO_ADMIN', 'LGU_HR'].includes(currentUser.role)
+  const { role: authRole } = useAuth()
+  const activeRole = authRole || currentUser.role
+  const canManagePersonnel = isActionAllowed(activeRole, 'personnel:manage')
 
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -193,7 +197,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
               <Download className="h-3.5 w-3.5" />
               Export CSV
             </button>
-            {isPrivileged && (
+            {canManagePersonnel && (
               <button
                 onClick={() => navigate('/admin/users')}
                 className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
@@ -277,7 +281,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
                   <th className="px-4 py-2.5 text-center">Sick Left</th>
                   <th className="px-4 py-2.5 text-center">Emergency Left</th>
                   <th className="px-4 py-2.5">Status</th>
-                  {isPrivileged && <th className="px-4 py-2.5 text-right">Actions</th>}
+                  {canManagePersonnel && <th className="px-4 py-2.5 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -323,7 +327,7 @@ export const PersonnelDirectoryScreen: React.FC = () => {
                         {p.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    {isPrivileged && (
+                    {canManagePersonnel && (
                       <td className="px-4 py-2.5 text-right">
                         <button
                           onClick={() => navigate('/admin/users')}
