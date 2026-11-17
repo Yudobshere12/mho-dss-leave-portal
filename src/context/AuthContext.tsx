@@ -1,14 +1,21 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import type { Database, UserRole, UserStatus } from '../types/database.types'
+
+export type Profile = Database['public']['Tables']['profiles']['Row']
 
 export interface AuthContextType {
   session: Session | null
   user: User | null
+  profile: Profile | null
+  role: UserRole | null
+  status: UserStatus | null
   loading: boolean
   signInWithGoogle: () => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  refreshProfile: () => Promise<Profile | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -16,39 +23,99 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
+  const fetchProfileForUser = useCallback(async (userId: string): Promise<Profile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error fetching profile:', error.message)
+        return null
+      }
+      return data ?? null
+    } catch (err) {
+      console.error('Unexpected error fetching profile:', err)
+      return null
+    }
+  }, [])
+
+  const refreshProfile = useCallback(async (): Promise<Profile | null> => {
+    if (!user) {
+      setProfile(null)
+      return null
+    }
+    const updated = await fetchProfileForUser(user.id)
+    setProfile(updated)
+    return updated
+  }, [user, fetchProfileForUser])
+
   useEffect(() => {
-    // 1. Fetch current active session on mount
+    let isMounted = true
+
+    // 1. Initial active session check
     supabase.auth
       .getSession()
-      .then(({ data: { session: initialSession }, error }) => {
+      .then(async ({ data: { session: initialSession }, error }) => {
+        if (!isMounted) return
         if (error) {
           console.error('Error fetching initial session:', error.message)
         }
         setSession(initialSession)
         setUser(initialSession?.user ?? null)
-        setLoading(false)
+
+        if (initialSession?.user) {
+          const userProfile = await fetchProfileForUser(initialSession.user.id)
+          if (isMounted) {
+            setProfile(userProfile)
+            setLoading(false)
+          }
+        } else {
+          if (isMounted) {
+            setProfile(null)
+            setLoading(false)
+          }
+        }
       })
       .catch((err) => {
-        console.error('Unexpected error fetching session:', err)
-        setLoading(false)
+        console.error('Unexpected error fetching initial session:', err)
+        if (isMounted) {
+          setLoading(false)
+        }
       })
 
-    // 2. Subscribe to auth state changes
+    // 2. Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+      if (!isMounted) return
       setSession(currentSession)
       setUser(currentSession?.user ?? null)
-      setLoading(false)
+
+      if (currentSession?.user) {
+        const userProfile = await fetchProfileForUser(currentSession.user.id)
+        if (isMounted) {
+          setProfile(userProfile)
+          setLoading(false)
+        }
+      } else {
+        if (isMounted) {
+          setProfile(null)
+          setLoading(false)
+        }
+      }
     })
 
-    // 3. Unsubscribe on unmount
     return () => {
+      isMounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchProfileForUser])
 
   const signInWithGoogle = async (): Promise<void> => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -57,37 +124,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         redirectTo: window.location.origin,
       },
     })
-    if (error) {
-      throw error
-    }
+    if (error) throw error
   }
 
   const signOut = async (): Promise<void> => {
     const { error } = await supabase.auth.signOut()
-    if (error) {
-      throw error
-    }
+    setSession(null)
+    setUser(null)
+    setProfile(null)
+    if (error) throw error
   }
 
-  // Email/password sign‑up using Supabase
   const signUp = async (email: string, password: string): Promise<void> => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
     })
-    if (error) {
-      throw error
-    }
+    if (error) throw error
   }
 
-  const value = {
+  const role = profile?.role ?? null
+  const status = profile?.status ?? null
+
+  const value: AuthContextType = {
     session,
     user,
+    profile,
+    role,
+    status,
     loading,
     signInWithGoogle,
     signUp,
     signOut,
+    refreshProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
