@@ -9,13 +9,10 @@ import {
   UserCog,
   FileText,
   ChevronDown,
-  Sun,
-  Moon,
   LogOut,
   X,
 } from 'lucide-react'
 import { useDevRole } from '../context/DevRoleContext'
-import { useTheme } from '../context/ThemeContext'
 import logoMarkSvg from '../assets/logo-mark.svg'
 import type { UserRole } from '../types/database.types'
 
@@ -101,10 +98,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, isExpanded, onClick }) 
       onClick={onClick}
       aria-label={item.label}
       className={({ isActive }) =>
-        `group relative flex items-center h-10 w-full rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-teal-500 ${
+        `group relative flex items-center h-10 w-full rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-teal-700 ${
           isActive
-            ? 'bg-teal-700 text-white font-semibold dark:bg-white dark:text-teal-950 shadow-soft'
-            : 'text-slate-600 hover:bg-teal-50 hover:text-teal-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
+            ? 'bg-teal-700 text-white font-semibold shadow-soft'
+            : 'text-slate-600 hover:bg-teal-50 hover:text-teal-900'
         }`
       }
     >
@@ -146,10 +143,10 @@ const SidebarGroup: React.FC<SidebarGroupProps> = ({
   return (
     <div className="space-y-1">
       {showDivider && (
-        <div className="my-2 border-t border-slate-200 dark:border-slate-750 mx-3" />
+        <div className="my-2 border-t border-slate-200 mx-3" />
       )}
       <div
-        className={`px-4 pb-1 text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 transition-opacity duration-200 ${
+        className={`px-4 pb-1 text-2xs font-bold uppercase tracking-wider text-slate-400 transition-opacity duration-200 ${
           isExpanded ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden pb-0'
         }`}
       >
@@ -166,39 +163,6 @@ const SidebarGroup: React.FC<SidebarGroupProps> = ({
         ))}
       </div>
     </div>
-  )
-}
-
-interface ThemeToggleProps {
-  isExpanded: boolean
-}
-
-const ThemeToggle: React.FC<ThemeToggleProps> = ({ isExpanded }) => {
-  const { theme, toggleTheme } = useTheme()
-  const isDark = theme === 'dark'
-
-  return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-      className="group relative flex items-center h-10 w-full rounded-full text-slate-600 hover:bg-teal-50 hover:text-teal-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white transition-colors motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-teal-500"
-    >
-      <div className="flex w-16 shrink-0 items-center justify-center">
-        {isDark ? (
-          <Moon className="h-5 w-5 text-amber-300 shrink-0" aria-hidden="true" />
-        ) : (
-          <Sun className="h-5 w-5 text-amber-500 shrink-0" aria-hidden="true" />
-        )}
-      </div>
-      <span
-        className={`whitespace-nowrap text-xs font-medium pr-4 transition-opacity duration-200 motion-reduce:transition-none ${
-          isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {isDark ? 'Dark Mode' : 'Light Mode'}
-      </span>
-    </button>
   )
 }
 
@@ -276,11 +240,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       .toUpperCase() || 'U'
 
   const renderContent = (expanded: boolean, isMobile: boolean) => (
-    <div className="flex h-full flex-col justify-between overflow-hidden">
+    <div className="flex h-full flex-col justify-between overflow-x-hidden overflow-y-auto">
       {/* Top Section */}
       <div className="flex flex-col min-w-0">
         {/* Logo Section */}
-        <div className="flex h-16 items-center justify-between px-3 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex h-16 items-center justify-between px-3 border-b border-slate-200">
           <div className="flex items-center w-full min-w-0">
             <div className="flex w-10 shrink-0 items-center justify-center ml-1">
               <img
@@ -294,10 +258,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                 expanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
             >
-              <span className="text-xs font-bold leading-tight text-slate-900 dark:text-white truncate">
+              <span className="text-xs font-bold leading-tight text-slate-900 truncate">
                 MHO DSS Portal
               </span>
-              <span className="text-2xs text-slate-500 dark:text-slate-400 truncate">
+              <span className="text-2xs text-slate-500 truncate">
                 Municipal Health Office
               </span>
             </div>
@@ -308,7 +272,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               type="button"
               onClick={onClose}
               aria-label="Close menu"
-              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600"
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
               <X className="h-5 w-5" />
             </button>
@@ -323,17 +287,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             aria-label={`Acting as ${currentUser.full_name} (${currentUser.role}). Click to switch role.`}
             aria-haspopup="listbox"
             aria-expanded={isRoleDropdownOpen}
-            className={`group flex items-center transition-all motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-teal-500 ${
+            className={`group flex items-center transition-all motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-teal-700 ${
               expanded
-                ? 'w-full rounded-full border border-teal-300 dark:border-teal-700/60 bg-teal-50/70 dark:bg-teal-950/40 px-3 py-1.5 text-left'
-                : 'mx-auto h-10 w-10 justify-center rounded-full border border-teal-300 dark:border-teal-700/60 bg-teal-50/70 dark:bg-teal-950/40'
+                ? 'w-full rounded-full border border-teal-200 bg-teal-50/70 px-3 py-1.5 text-left'
+                : 'mx-auto h-10 w-10 justify-center rounded-full border border-teal-200 bg-teal-50/70'
             }`}
           >
             <div
               className={`flex shrink-0 items-center justify-center rounded-full font-bold text-2xs ${
                 expanded
-                  ? 'h-6 w-6 bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950 mr-2'
-                  : 'h-7 w-7 bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950'
+                  ? 'h-6 w-6 bg-teal-700 text-white mr-2'
+                  : 'h-7 w-7 bg-teal-700 text-white'
               }`}
             >
               {userInitials}
@@ -342,15 +306,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             {expanded && (
               <div className="flex-1 min-w-0 flex items-center justify-between">
                 <div className="truncate pr-1">
-                  <div className="text-2xs font-bold text-teal-950 dark:text-teal-100 truncate">
+                  <div className="text-2xs font-bold text-teal-950 truncate">
                     {currentUser.full_name}
                   </div>
-                  <div className="text-3xs text-teal-800 dark:text-teal-300 truncate">
+                  <div className="text-3xs text-teal-800 truncate">
                     {currentUser.role} &bull; TEMPORARY
                   </div>
                 </div>
                 <ChevronDown
-                  className={`h-3.5 w-3.5 text-teal-700 dark:text-teal-300 shrink-0 transition-transform duration-200 ${
+                  className={`h-3.5 w-3.5 text-teal-700 shrink-0 transition-transform duration-200 ${
                     isRoleDropdownOpen ? 'rotate-180' : ''
                   }`}
                   aria-hidden="true"
@@ -364,9 +328,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             <div
               role="listbox"
               aria-label="Select simulated user profile"
-              className="absolute left-2 right-2 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1 shadow-card"
+              className="absolute left-2 right-2 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-card"
             >
-              <div className="px-2 py-1 text-3xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
+              <div className="px-2 py-1 text-3xs font-bold text-slate-400 uppercase tracking-wider">
                 Switch Role (Dev Preview)
               </div>
               {availableProfiles.map((p) => {
@@ -383,14 +347,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                     }}
                     className={`w-full rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
                       isSelected
-                        ? 'bg-teal-700 text-white dark:bg-teal-600 font-semibold'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        ? 'bg-teal-700 text-white font-semibold'
+                        : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >
                     <div className="font-semibold truncate">{p.full_name}</div>
                     <div
                       className={`text-2xs truncate ${
-                        isSelected ? 'text-teal-100' : 'text-slate-400 dark:text-slate-400'
+                        isSelected ? 'text-teal-100' : 'text-slate-400'
                       }`}
                     >
                       {p.role} &bull; {p.position || 'Staff'}
@@ -404,7 +368,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
         {/* Navigation Groups */}
         <nav
-          className="flex-1 overflow-y-auto px-2 space-y-2"
+          className="flex-1 overflow-y-auto overflow-x-hidden px-2 space-y-2"
           aria-label="Sidebar Navigation"
         >
           {NAV_GROUPS.map((group, idx) => (
@@ -421,16 +385,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       </div>
 
       {/* Bottom Block */}
-      <div className="border-t border-slate-200 dark:border-slate-800 p-2 space-y-1">
-        {/* Theme Toggle */}
-        <ThemeToggle isExpanded={expanded} />
-
+      <div className="border-t border-slate-200 p-2 space-y-1">
         {/* Sign Out Action */}
         <Link
           to="/login"
           onClick={isMobile ? onClose : undefined}
           aria-label="Sign Out"
-          className="group relative flex items-center h-10 w-full rounded-full text-slate-600 hover:bg-red-50 hover:text-red-700 dark:text-slate-300 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-colors motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-red-500"
+          className="group relative flex items-center h-10 w-full rounded-full text-slate-600 hover:bg-red-50 hover:text-red-700 transition-colors motion-reduce:transition-none focus:outline-hidden focus:ring-2 focus:ring-red-500"
         >
           <div className="flex w-16 shrink-0 items-center justify-center">
             <LogOut className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -445,11 +406,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         </Link>
 
         {/* Avatar block with user info */}
-        <div className="pt-1 border-t border-slate-100 dark:border-slate-800/80">
+        <div className="pt-1 border-t border-slate-100">
           <div className="flex items-center h-11 w-full rounded-full px-1">
             <div className="flex w-14 shrink-0 items-center justify-center">
               <div
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 text-teal-800 dark:bg-white/10 dark:text-white border border-teal-200 dark:border-white/20 font-bold text-2xs"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 text-teal-800 border border-teal-200 font-bold text-2xs"
                 title={currentUser.full_name}
               >
                 {userInitials}
@@ -460,10 +421,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                 expanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
             >
-              <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+              <div className="text-xs font-semibold text-slate-900 truncate">
                 {currentUser.full_name}
               </div>
-              <div className="text-2xs text-slate-500 dark:text-slate-400 truncate">
+              <div className="text-2xs text-slate-500 truncate">
                 {currentUser.role}
               </div>
             </div>
@@ -475,14 +436,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
   return (
     <>
-      {/* Desktop Supabase-style Sidebar */}
+      {/* Desktop Supabase-style Sidebar: White with teal active pill, no dark sidebar */}
       <aside
         aria-label="Application sidebar"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        className={`hidden md:block fixed inset-y-0 left-0 z-40 bg-white dark:bg-teal-950 border-r border-slate-200 dark:border-teal-900 transition-[width,box-shadow] duration-200 motion-reduce:transition-none ${
+        className={`hidden md:block fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-[width,box-shadow] duration-200 motion-reduce:transition-none overflow-x-hidden ${
           isExpandedDesktop ? 'w-[248px] shadow-soft' : 'w-16'
         }`}
       >
@@ -493,11 +454,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden" role="dialog" aria-modal="true">
           <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
             onClick={onClose}
             aria-hidden="true"
           />
-          <aside className="relative z-50 flex h-full w-[248px] flex-col bg-white dark:bg-teal-950 border-r border-slate-200 dark:border-teal-900 shadow-xl">
+          <aside className="relative z-50 flex h-full w-[248px] flex-col bg-white border-r border-slate-200 shadow-xl overflow-x-hidden">
             {renderContent(true, true)}
           </aside>
         </div>

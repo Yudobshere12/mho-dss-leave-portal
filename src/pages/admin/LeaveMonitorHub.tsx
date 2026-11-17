@@ -458,7 +458,7 @@ export const LeaveMonitorHub: React.FC = () => {
             <div className="flex justify-end pt-2 border-t border-slate-100">
               <button
                 onClick={() => setViewDetailsApp(null)}
-                className="rounded-full bg-slate-800 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 transition-colors"
+                className="rounded-full bg-teal-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-teal-800 transition-colors"
               >
                 Close
               </button>
