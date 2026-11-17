@@ -150,13 +150,13 @@ export const ExecutiveDashboard: React.FC = () => {
     )
   }
 
-  const categoryColors = [
-    '#0F766E',
-    '#0D9488',
-    '#14B8A6',
-    '#059669',
-    '#F59E0B',
-    '#64748B',
+  const categoryClasses = [
+    { dot: 'bg-teal-700', bar: 'bg-teal-700' },
+    { dot: 'bg-teal-600', bar: 'bg-teal-600' },
+    { dot: 'bg-teal-500', bar: 'bg-teal-500' },
+    { dot: 'bg-emerald-600', bar: 'bg-emerald-600' },
+    { dot: 'bg-amber-600', bar: 'bg-amber-600' },
+    { dot: 'bg-slate-500', bar: 'bg-slate-500' },
   ]
 
   return (
@@ -346,12 +346,12 @@ export const ExecutiveDashboard: React.FC = () => {
                 <div className="space-y-3 pt-1">
                   {stats.categories.map((cat, idx) => {
                     const percentage = Math.round((cat.count / stats.total) * 100)
-                    const color = categoryColors[idx % categoryColors.length]
+                    const themeClass = categoryClasses[idx % categoryClasses.length]
                     return (
                       <div key={cat.name} className="space-y-1 text-xs">
                         <div className="flex justify-between items-center text-slate-700">
                           <span className="font-semibold flex items-center gap-2 text-2xs">
-                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+                            <span className={`h-2 w-2 rounded-full ${themeClass.dot}`} />
                             {cat.name}
                           </span>
                           <span className="font-bold text-2xs">
@@ -360,8 +360,8 @@ export const ExecutiveDashboard: React.FC = () => {
                         </div>
                         <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                           <div
-                            className="h-full rounded-full"
-                            style={{ width: `${percentage}%`, backgroundColor: color }}
+                            className={`h-full rounded-full ${themeClass.bar}`}
+                            style={{ width: `${percentage}%` }}
                           />
                         </div>
                       </div>

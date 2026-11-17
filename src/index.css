@@ -16,7 +16,7 @@
     --popover: #FFFFFF;
     --popover-foreground: #0F172A;
 
-    --primary: #0F766E;            /* teal-700 */
+    --primary: #0F766E;            /* teal-700 (matching Sign In CTA) */
     --primary-hover: #115E59;      /* teal-800 hover */
     --primary-foreground: #FFFFFF;
 
@@ -38,12 +38,12 @@
     --input-border: #CBD5E1;       /* slate-300 */
     --ring: #0F766E;
 
-    /* Semantic Status Colors */
+    /* Semantic Status Colors (Only for Badges/Indicators) */
     --success: #059669;            /* emerald-600 */
     --success-bg: #ECFDF5;         /* emerald-50 */
     --success-border: #A7F3D0;     /* emerald-200 */
 
-    --warning: #F59E0B;            /* amber-500 */
+    --warning: #D97706;            /* amber-600 */
     --warning-bg: #FFFBEB;         /* amber-50 */
     --warning-border: #FDE68A;     /* amber-200 */
 
@@ -65,42 +65,6 @@
     --shadow-soft: 0 8px 30px rgba(15, 23, 42, 0.06);
     --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
   }
-
-  .dark {
-    --background: #0F172A;         /* slate-900 */
-    --foreground: #F8FAFC;         /* slate-50 */
-
-    --card: #1E293B;               /* slate-800 */
-    --card-foreground: #F8FAFC;
-
-    --popover: #1E293B;            /* slate-800 */
-    --popover-foreground: #F8FAFC;
-
-    --primary: #14B8A6;            /* teal-500 */
-    --primary-hover: #0D9488;      /* teal-600 */
-    --primary-foreground: #042F2E; /* teal-950 */
-
-    --accent: #2DD4BF;             /* teal-400 */
-    --accent-foreground: #042F2E;
-
-    --tint-50: rgba(15, 118, 110, 0.2);
-    --tint-100: rgba(15, 118, 110, 0.35);
-
-    --secondary: #334155;          /* slate-700 */
-    --secondary-foreground: #F8FAFC;
-
-    --muted: #1E293B;              /* slate-800 */
-    --muted-foreground: #94A3B8;   /* slate-400 */
-    --text-secondary: #CBD5E1;     /* slate-300 */
-
-    --border: #334155;             /* slate-700 */
-    --input: #1E293B;              /* slate-800 input bg */
-    --input-border: #475569;       /* slate-600 */
-    --ring: #14B8A6;
-
-    --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.4);
-    --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
-  }
 }
 
 body {
@@ -116,14 +80,6 @@ body {
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
 }
 
-.dark .shadow-soft {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-}
-
 .shadow-card {
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
-}
-
-.dark .shadow-card {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
 }
