@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   CheckCircle2,
   XCircle,
@@ -7,6 +7,8 @@ import {
   Calendar,
 } from 'lucide-react'
 import { LeaveTypeBadge } from './LeaveTypeBadge'
+import { DssAdvisoryCard } from './DssAdvisoryCard'
+import { parseDssFromColumn } from '../lib/dssPresenter'
 import type { Database } from '../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
@@ -67,6 +69,16 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
 
   const isApprove = action === 'APPROVE'
   const workingDays = application.working_days ?? application.total_days
+
+  const dssViewModel = useMemo(() => {
+    if (!application?.dss_recommendation) return null
+    return parseDssFromColumn(application.dss_recommendation, {
+      leaveTypeName: application.leave_type,
+      startDate: application.start_date,
+      endDate: application.end_date,
+      requestedDays: workingDays,
+    })
+  }, [application, workingDays])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -146,19 +158,10 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
 
         {/* DSS Advisory Notice */}
         {application.dss_recommendation && (
-          <div
-            className={`rounded-lg border p-3 text-xs flex items-start gap-2 ${
-              application.dss_recommendation.includes('RECOMMENDED')
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                : 'border-amber-200 bg-amber-50 text-amber-900'
-            }`}
-          >
-            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold">7.B Recommendation:</span>{' '}
-              {application.dss_recommendation}
-            </div>
-          </div>
+          <DssAdvisoryCard
+            viewModel={dssViewModel}
+            isAdmin={true}
+          />
         )}
 
         {validationError && (
