@@ -241,7 +241,7 @@ export const LeaveFilingPage: React.FC = () => {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <PageHeader title="Apply for Leave" />
-        <NotAuthorizedFallback message="Your current role (LGU_HR) does not have permission to file leave applications." />
+        <NotAuthorizedFallback message="Your current role does not have permission to file leave applications." />
       </div>
     )
   }
