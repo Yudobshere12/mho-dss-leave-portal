@@ -384,6 +384,12 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      earliest_start_date: {
+        Args: {
+          p_type: string
+        }
+        Returns: string
+      }
       count_weekdays: {
         Args: {
           p_start_date: string
