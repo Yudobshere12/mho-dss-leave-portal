@@ -58,6 +58,7 @@ export const UserManagementScreen: React.FC = () => {
   const [role, setRole] = useState<UserRole>('STAFF')
   const [status, setStatus] = useState<UserStatus>('approved')
   const [position, setPosition] = useState('')
+  const [monthlySalary, setMonthlySalary] = useState<number | ''>('')
   const [vacationCredits, setVacationCredits] = useState<number>(15.0)
   const [sickCredits, setSickCredits] = useState<number>(15.0)
   const [emergencyCredits, setEmergencyCredits] = useState<number>(5.0)
@@ -182,18 +183,36 @@ export const UserManagementScreen: React.FC = () => {
   }
 
   // Edit user modal open
-  const handleOpenEdit = (p: Profile) => {
+  const handleOpenEdit = async (p: Profile) => {
     setSelectedProfile(p)
     setFullName(p.full_name || '')
     setEmail(p.email || '')
     setRole(p.role)
     setStatus(p.status)
     setPosition(p.position || '')
+    setMonthlySalary('')
     setVacationCredits(p.vacation_credits ?? 15.0)
     setSickCredits(p.sick_credits ?? 15.0)
     setEmergencyCredits(p.emergency_credits ?? 5.0)
     setIsActive(p.is_active ?? true)
     setIsEditModalOpen(true)
+
+    // Fetch confidential monthly salary if caller is MHO_ADMIN
+    if (activeRole === 'MHO_ADMIN') {
+      try {
+        const { data: salaryData } = await supabase
+          .from('employee_compensation')
+          .select('monthly_salary')
+          .eq('user_id', p.id)
+          .maybeSingle()
+
+        if (salaryData && typeof salaryData.monthly_salary === 'number') {
+          setMonthlySalary(salaryData.monthly_salary)
+        }
+      } catch {
+        // Table might be pending migration or empty
+      }
+    }
   }
 
   const handleCloseModal = () => {
@@ -250,6 +269,21 @@ export const UserManagementScreen: React.FC = () => {
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', selectedProfile.id)
+
+      // Save confidential compensation if MHO_ADMIN and monthlySalary is provided
+      if (activeRole === 'MHO_ADMIN' && monthlySalary !== '') {
+        try {
+          await supabase
+            .from('employee_compensation')
+            .upsert({
+              user_id: selectedProfile.id,
+              monthly_salary: Number(monthlySalary),
+              updated_at: new Date().toISOString(),
+            })
+        } catch (compErr) {
+          console.warn('Could not save employee compensation:', compErr)
+        }
+      }
 
       setProfiles((prev) =>
         prev.map((p) =>
@@ -740,15 +774,34 @@ export const UserManagementScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Position Title</label>
-                <input
-                  type="text"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  placeholder="e.g. Staff Nurse II"
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Position Title</label>
+                  <input
+                    type="text"
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    placeholder="e.g. Staff Nurse II"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700"
+                  />
+                </div>
+
+                {activeRole === 'MHO_ADMIN' && (
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Monthly Salary (PHP) &bull; Confidential
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={monthlySalary}
+                      onChange={(e) => setMonthlySalary(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      placeholder="e.g. 35000.00"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 font-mono"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Leave Credits Calibration Box */}
