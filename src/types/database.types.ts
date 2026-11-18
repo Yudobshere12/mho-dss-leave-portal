@@ -13,6 +13,38 @@ export type LeaveType = string
 
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
+export type CommutationType = 'requested' | 'not_requested'
+export type RecommendationType = 'for_approval' | 'for_disapproval'
+
+export interface LeaveDetails {
+  location?: 'within_philippines' | 'abroad'
+  care_type?: 'in_hospital' | 'out_patient'
+  illness?: string
+  study_purpose?: 'masters_completion' | 'bar_board_review'
+  other_purpose?: 'monetization' | 'terminal_leave'
+  specify?: string
+  [key: string]: unknown
+}
+
+export interface CreditsSnapshot {
+  as_of_date: string
+  vacation: {
+    total_earned: number
+    less_this_app: number
+    balance: number
+  }
+  sick: {
+    total_earned: number
+    less_this_app: number
+    balance: number
+  }
+  total: {
+    total_earned: number
+    less_this_app: number
+    balance: number
+  }
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -70,6 +102,35 @@ export interface Database {
         }
         Relationships: []
       }
+      employee_compensation: {
+        Row: {
+          user_id: string
+          monthly_salary: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          monthly_salary: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          monthly_salary?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'employee_compensation_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       leave_applications: {
         Row: {
           id: number
@@ -80,6 +141,19 @@ export interface Database {
           start_date: string
           end_date: string
           total_days: number
+          working_days: number | null
+          control_number: string | null
+          date_of_filing: string
+          position_at_filing: string | null
+          details: LeaveDetails
+          commutation: CommutationType
+          credits_snapshot: CreditsSnapshot | null
+          recommendation: RecommendationType | null
+          recommendation_reason: string | null
+          approved_days_with_pay: number | null
+          approved_days_without_pay: number | null
+          approved_others: string | null
+          disapproval_reason: string | null
           reason: string | null
           status: LeaveStatus
           dss_recommendation: string | null
@@ -97,7 +171,20 @@ export interface Database {
           other_leave_type?: string | null
           start_date: string
           end_date: string
-          total_days: number
+          total_days?: number
+          working_days?: number | null
+          control_number?: string | null
+          date_of_filing?: string
+          position_at_filing?: string | null
+          details?: LeaveDetails
+          commutation?: CommutationType
+          credits_snapshot?: CreditsSnapshot | null
+          recommendation?: RecommendationType | null
+          recommendation_reason?: string | null
+          approved_days_with_pay?: number | null
+          approved_days_without_pay?: number | null
+          approved_others?: string | null
+          disapproval_reason?: string | null
           reason?: string | null
           status?: LeaveStatus
           dss_recommendation?: string | null
@@ -116,6 +203,19 @@ export interface Database {
           start_date?: string
           end_date?: string
           total_days?: number
+          working_days?: number | null
+          control_number?: string | null
+          date_of_filing?: string
+          position_at_filing?: string | null
+          details?: LeaveDetails
+          commutation?: CommutationType
+          credits_snapshot?: CreditsSnapshot | null
+          recommendation?: RecommendationType | null
+          recommendation_reason?: string | null
+          approved_days_with_pay?: number | null
+          approved_days_without_pay?: number | null
+          approved_others?: string | null
+          disapproval_reason?: string | null
           reason?: string | null
           status?: LeaveStatus
           dss_recommendation?: string | null
@@ -331,7 +431,9 @@ export interface Database {
       approve_leave: {
         Args: {
           p_leave_id: number
-          p_admin_id: string
+          p_approved_days_with_pay?: number | null
+          p_approved_days_without_pay?: number | null
+          p_approved_others?: string | null
           p_remarks?: string | null
         }
         Returns: Database['public']['Tables']['leave_applications']['Row']
@@ -339,7 +441,7 @@ export interface Database {
       reject_leave: {
         Args: {
           p_leave_id: number
-          p_admin_id?: string | null
+          p_disapproval_reason: string
           p_remarks?: string | null
         }
         Returns: Database['public']['Tables']['leave_applications']['Row']
