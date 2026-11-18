@@ -1,49 +1,56 @@
 import React, { useState, useEffect } from 'react'
 import {
-  CalendarCheck,
-  CheckCircle2,
-  XCircle,
   Calendar,
   Clock,
   RotateCcw,
+  CheckCircle2,
+  XCircle,
+  FileText,
 } from 'lucide-react'
 import { useDevRole } from '../../context/DevRoleContext'
 import { supabase } from '../../lib/supabase'
 import { DssBadge } from '../../components/DssBadge'
-import { DecisionDialog } from '../../components/DecisionDialog'
+import { DecisionDialog, type ApprovalPayload, type RejectionPayload } from '../../components/DecisionDialog'
+import { CSForm6DetailModal } from '../../components/CSForm6DetailModal'
 import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
+import { useSystemSettings } from '../../lib/systemSettings'
 import type { Database } from '../../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
 
 export const ApprovalQueueScreen: React.FC = () => {
   const { currentUser } = useDevRole()
-
-  const canDecide = ['MHO_ADMIN', 'MHO_HEAD'].includes(currentUser.role)
+  const { settings } = useSystemSettings()
 
   const [applications, setApplications] = useState<LeaveApplication[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  // Dialog state
+  // Decision Modal State
   const [selectedApp, setSelectedApp] = useState<LeaveApplication | null>(null)
   const [decisionAction, setDecisionAction] = useState<'APPROVE' | 'REJECT' | null>(null)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
 
+  // Form 6 Details Modal State
+  const [detailModalApp, setDetailModalApp] = useState<LeaveApplication | null>(null)
+
+  const canDecide = currentUser.role === 'MHO_HEAD'
+
   const fetchPendingQueue = async () => {
     setIsLoading(true)
     setErrorMessage(null)
+
     try {
       const { data, error } = await supabase
         .from('leave_applications')
         .select('*')
         .eq('status', 'PENDING')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
 
       if (error) {
         throw new Error(error.message)
@@ -66,23 +73,47 @@ export const ApprovalQueueScreen: React.FC = () => {
     setDecisionAction(action)
   }
 
-  const handleConfirmDecision = async (applicationId: number, remarks: string) => {
+  const handleConfirmDecision = async (
+    applicationId: number,
+    decisionPayload: ApprovalPayload | RejectionPayload | string
+  ) => {
     setIsProcessing(true)
     setFeedback(null)
 
     try {
       if (decisionAction === 'APPROVE') {
+        const payload: ApprovalPayload =
+          typeof decisionPayload === 'object' && 'approved_days_with_pay' in decisionPayload
+            ? decisionPayload
+            : {
+                approved_days_with_pay: 0,
+                approved_days_without_pay: 0,
+                approved_others: null,
+                remarks: typeof decisionPayload === 'string' ? decisionPayload : null,
+              }
+
         const { error } = await supabase.rpc('approve_leave', {
           p_leave_id: applicationId,
-          p_admin_id: currentUser.id,
-          p_remarks: remarks || null,
+          p_approved_days_with_pay: payload.approved_days_with_pay,
+          p_approved_days_without_pay: payload.approved_days_without_pay,
+          p_approved_others: payload.approved_others,
+          p_remarks: payload.remarks,
         })
         if (error) throw new Error(error.message)
       } else {
+        const payload: RejectionPayload =
+          typeof decisionPayload === 'object' && 'disapproval_reason' in decisionPayload
+            ? decisionPayload
+            : {
+                disapproval_reason:
+                  typeof decisionPayload === 'string' ? decisionPayload : 'Disapproved by MHO Head',
+                remarks: null,
+              }
+
         const { error } = await supabase.rpc('reject_leave', {
           p_leave_id: applicationId,
-          p_admin_id: currentUser.id,
-          p_remarks: remarks || null,
+          p_disapproval_reason: payload.disapproval_reason,
+          p_remarks: payload.remarks,
         })
         if (error) throw new Error(error.message)
       }
@@ -109,84 +140,84 @@ export const ApprovalQueueScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Approval Queue"
+        title="Leave Approval Queue"
         action={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchPendingQueue}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Refresh
-            </button>
-          </div>
+          <button
+            onClick={fetchPendingQueue}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Refresh
+          </button>
         }
       />
 
       {feedback && (
         <div
-          className={`rounded-xl border p-3.5 text-xs flex items-center justify-between ${
+          className={`flex items-center justify-between rounded-xl p-4 text-xs font-medium border ${
             feedback.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-              : 'border-rose-200 bg-rose-50 text-rose-900'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
           }`}
         >
           <span>{feedback.message}</span>
           <button
             onClick={() => setFeedback(null)}
-            className="text-2xs font-bold underline opacity-80 hover:opacity-100"
+            className="text-xs font-bold underline ml-4 hover:opacity-80"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <CalendarCheck className="h-4 w-4 text-teal-700" />
-            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Pending Applications ({applications.length})
-            </h2>
-          </div>
-          <span className="text-2xs text-slate-500">
-            Reviewer: <strong>{currentUser.full_name}</strong>
-          </span>
+      {/* Reviewer Notice */}
+      <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-4 text-xs text-teal-900 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+        <div>
+          <span>Reviewing as: </span>
+          <strong>{currentUser.full_name}</strong>
+          <span className="text-teal-700 font-normal"> ({currentUser.role})</span>
         </div>
+        <div className="text-2xs text-teal-800">
+          Signatory: <strong>{settings.mho_name}</strong> ({settings.mho_title})
+        </div>
+      </div>
 
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft space-y-4">
         {isLoading ? (
-          <LoadingState message="Loading pending approval queue..." />
+          <LoadingState message="Fetching pending leave applications..." />
         ) : errorMessage ? (
           <ErrorState message={errorMessage} onRetry={fetchPendingQueue} />
         ) : applications.length === 0 ? (
           <EmptyState
-            title="No pending applications"
-            description="All filed leave applications have been reviewed."
+            title="Approval Queue Clean"
+            description="There are currently no leave applications awaiting executive review."
           />
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {applications.map((app) => (
               <div
                 key={app.id}
-                className="rounded-xl border border-slate-200 p-4 space-y-3 hover:border-teal-200 hover:shadow-xs transition-all bg-white"
+                className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 text-xs shadow-2xs hover:border-slate-300 transition-all space-y-3"
               >
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">
-                      {app.employee_name || 'Walk-in Personnel'}
-                    </span>
-                    <span className="text-2xs text-slate-400">#APP-{app.id}</span>
-                    {app.user_id === null && (
-                      <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-2xs font-bold text-amber-800">
-                        Walk-in
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      {app.employee_name || 'Walk-in Applicant'}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="font-mono text-3xs font-semibold text-teal-800 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded">
+                        {app.control_number || `Leave-${app.id}`}
                       </span>
-                    )}
+                      {app.position_at_filing && (
+                        <span className="text-3xs text-slate-500">{app.position_at_filing}</span>
+                      )}
+                    </div>
                   </div>
                   <DssBadge recommendation={app.dss_recommendation} />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-700">
-                  <div className="flex items-center gap-1.5">
+                <div className="space-y-1.5 text-slate-600">
+                  <div className="flex items-center gap-2">
                     <span className="font-semibold text-slate-900">Type:</span>{' '}
                     <LeaveTypeBadge codeOrName={app.leave_type} />
                     {app.other_leave_type && (
@@ -201,7 +232,7 @@ export const ApprovalQueueScreen: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1.5 font-bold text-teal-800">
                     <Clock className="h-3.5 w-3.5 text-teal-700" />
-                    <span>{app.total_days} Working Day(s)</span>
+                    <span>{app.working_days ?? app.total_days} Working Day(s)</span>
                   </div>
                 </div>
 
@@ -212,9 +243,19 @@ export const ApprovalQueueScreen: React.FC = () => {
                 )}
 
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center pt-2 border-t border-slate-100 gap-2">
-                  <span className="text-2xs text-slate-400">
-                    Filed {new Date(app.created_at).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xs text-slate-400">
+                      Filed {app.date_of_filing || new Date(app.created_at).toLocaleDateString()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDetailModalApp(app)}
+                      className="inline-flex items-center gap-1 text-2xs font-semibold text-teal-700 hover:text-teal-900 hover:underline"
+                    >
+                      <FileText className="h-3 w-3" />
+                      View Form 6
+                    </button>
+                  </div>
 
                   {canDecide ? (
                     <div className="flex gap-2 justify-end">
@@ -223,7 +264,7 @@ export const ApprovalQueueScreen: React.FC = () => {
                         className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
                       >
                         <XCircle className="h-3.5 w-3.5" />
-                        Reject
+                        Disapprove
                       </button>
                       <button
                         onClick={() => handleOpenDialog(app, 'APPROVE')}
@@ -235,7 +276,7 @@ export const ApprovalQueueScreen: React.FC = () => {
                     </div>
                   ) : (
                     <span className="text-2xs text-slate-500 italic">
-                      Review restricted to Administrator & Office Head.
+                      Review restricted to Office Head.
                     </span>
                   )}
                 </div>
@@ -255,6 +296,17 @@ export const ApprovalQueueScreen: React.FC = () => {
           setDecisionAction(null)
         }}
         onConfirm={handleConfirmDecision}
+      />
+
+      <CSForm6DetailModal
+        application={detailModalApp}
+        isOpen={Boolean(detailModalApp)}
+        onClose={() => setDetailModalApp(null)}
+        officeName={settings.office_name}
+        hrmoName={settings.hrmo_name}
+        hrmoTitle={settings.hrmo_title}
+        mhoName={settings.mho_name}
+        mhoTitle={settings.mho_title}
       />
     </div>
   )
