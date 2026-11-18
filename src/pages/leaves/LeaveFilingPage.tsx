@@ -242,6 +242,21 @@ export const LeaveFilingPage: React.FC = () => {
   }, [effectiveUserId, leaveType, totalDays, startDate, endDate, effectiveApplicantProfile, currentUser, leaveTypes])
 
   const selectedTypeConfig = leaveTypes.find((t) => t.code === leaveType)
+
+  // Earliest allowed start date according to leave_types configuration
+  const minStartDate = useMemo(() => {
+    const today = new Date()
+    if (selectedTypeConfig?.requires_advance_filing && selectedTypeConfig.min_advance_days > 0) {
+      today.setDate(today.getDate() + selectedTypeConfig.min_advance_days)
+    }
+    return today.toISOString().slice(0, 10)
+  }, [selectedTypeConfig])
+
+  // Advance filing violation check
+  const isTooEarlyForAdvanceNotice = useMemo(() => {
+    if (!selectedTypeConfig?.requires_advance_filing || !startDate) return false
+    return startDate < minStartDate
+  }, [selectedTypeConfig, startDate, minStartDate])
   const isVLorSPL = ['VL', 'FL', 'SPL'].includes(leaveType)
   const isSL = leaveType === 'SL'
   const isSLBW = leaveType === 'SLBW'
@@ -265,6 +280,13 @@ export const LeaveFilingPage: React.FC = () => {
 
     if (totalDays <= 0) {
       setSubmitError('Selected date range contains no valid working days (weekends only).')
+      return
+    }
+
+    if (isTooEarlyForAdvanceNotice) {
+      setSubmitError(
+        `Advance filing notice requirement not met: ${selectedTypeConfig?.name || leaveType} must be filed at least ${selectedTypeConfig?.min_advance_days || 5} days before the start date. Earliest allowed start date is ${minStartDate}.`
+      )
       return
     }
 
@@ -630,9 +652,14 @@ export const LeaveFilingPage: React.FC = () => {
                   </p>
                 )}
                 {selectedTypeConfig?.requires_advance_filing && (
-                  <p className="mt-0.5 text-2xs text-amber-700 font-medium">
-                    &bull; Notice requirement: at least {selectedTypeConfig.min_advance_days} days notice before leave start date.
-                  </p>
+                  <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold">Advance Filing Notice Requirement:</span>{' '}
+                      This leave must be filed at least {selectedTypeConfig.min_advance_days} days before the start date. Earliest start date:{' '}
+                      <strong className="underline">{minStartDate}</strong>.
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -826,16 +853,27 @@ export const LeaveFilingPage: React.FC = () => {
                   <input
                     type="date"
                     required
+                    min={selectedTypeConfig?.requires_advance_filing ? minStartDate : undefined}
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden"
+                    className={`w-full rounded-xl border px-3 py-1.5 text-xs text-slate-900 focus:outline-hidden ${
+                      isTooEarlyForAdvanceNotice
+                        ? 'border-red-400 bg-red-50 focus:border-red-500'
+                        : 'border-slate-300 bg-slate-50 focus:border-teal-700 focus:bg-white'
+                    }`}
                   />
+                  {isTooEarlyForAdvanceNotice && (
+                    <p className="mt-1 text-2xs font-semibold text-red-600">
+                      Cannot start earlier than {minStartDate} ({selectedTypeConfig?.min_advance_days || 5} days advance notice required).
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">End Date *</label>
                   <input
                     type="date"
                     required
+                    min={startDate || (selectedTypeConfig?.requires_advance_filing ? minStartDate : undefined)}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden"
@@ -939,24 +977,37 @@ export const LeaveFilingPage: React.FC = () => {
               />
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting || totalDays <= 0}
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating CS Form 6 & Filing...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Submit CS Form No. 6 Application
-                </>
+            {/* Submit Button & Inline Notice */}
+            <div className="space-y-2">
+              {isTooEarlyForAdvanceNotice && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Filing Blocked:</span> This leave type requires at least{' '}
+                    {selectedTypeConfig?.min_advance_days || 5} days advance notice. Earliest allowed start date is{' '}
+                    <strong>{minStartDate}</strong>.
+                  </div>
+                </div>
               )}
-            </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || totalDays <= 0 || isTooEarlyForAdvanceNotice}
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating CS Form 6 & Filing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Submit CS Form No. 6 Application
+                  </>
+                )}
+              </button>
+            </div>
           </form>
         </div>
       </div>
