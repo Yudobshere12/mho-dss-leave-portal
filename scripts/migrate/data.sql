@@ -13,7 +13,7 @@ INSERT INTO public.profiles (id, full_name, email, role, position, vacation_cred
 VALUES
     ('17077ada-4e88-5b7c-a0bd-bf052f22d807', 'Dr. Maria Clara Salcedo', 'head@mho.gov.ph', 'MHO_HEAD', 'Municipal Health Officer', 15.00, 15.00, 5.00, TRUE, '2026-01-10 08:00:00+00', '2026-01-10 08:00:00+00'),
     ('b6dffe6a-b002-5dbe-8ca1-a73bd229dd53', 'Roberto Gomez', 'admin@mho.gov.ph', 'MHO_ADMIN', 'Administrative Officer V', 15.00, 15.00, 5.00, TRUE, '2026-01-12 08:30:00+00', '2026-01-12 08:30:00+00'),
-    ('98d4f74f-0b5d-5997-8009-e41a5e3c9041', 'Elena Rostata', 'hr@mho.gov.ph', 'LGU_HR', 'Human Resource Management Officer II', 15.00, 15.00, 5.00, TRUE, '2026-01-15 09:00:00+00', '2026-01-15 09:00:00+00'),
+    ('98d4f74f-0b5d-5997-8009-e41a5e3c9041', 'Elena Rostata', 'hr@mho.gov.ph', 'STAFF', 'Administrative Assistant II', 15.00, 15.00, 5.00, TRUE, '2026-01-15 09:00:00+00', '2026-01-15 09:00:00+00'),
     ('305f4b3b-a1a6-5644-a282-43b38180a6cd', 'Juan dela Cruz', 'staff1@mho.gov.ph', 'STAFF', 'Staff Nurse II', 12.00, 15.00, 5.00, TRUE, '2026-02-01 08:00:00+00', '2026-02-01 08:00:00+00'),
     ('0b2f99ab-3a76-5ca0-9d2f-fc617d2c2302', 'Maria Santos', 'staff2@mho.gov.ph', 'STAFF', 'Rural Health Midwife I', 15.00, 13.00, 5.00, TRUE, '2026-02-05 08:15:00+00', '2026-02-05 08:15:00+00'),
     ('ccfe4940-66d8-55b0-9b69-e990334f80b1', 'Antonio Luna', 'staff3@mho.gov.ph', 'STAFF', 'Medical Technologist I', 15.00, 15.00, 5.00, TRUE, '2026-02-10 08:30:00+00', '2026-02-10 08:30:00+00')
