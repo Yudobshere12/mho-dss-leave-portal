@@ -20,7 +20,7 @@ Represents registered health office employees, administrators, and leadership.
 | `email` | `VARCHAR(191)` | `NO` | Unique | User email address used for sign-in and notifications. |
 | `password` | `VARCHAR(255)` | `NO` | None | Bcrypt hashed credential. |
 | `full_name` | `VARCHAR(191)` | `NO` | None | Formal full name (e.g., "Maria Santos"). |
-| `role` | `VARCHAR(50)` | `NO` | `'STAFF'` | System role: `'STAFF'`, `'MHO_ADMIN'`, `'MHO_HEAD'`, `'LGU_HR'`. |
+| `role` | `VARCHAR(50)` | `NO` | `'STAFF'` | System role: `'STAFF'`, `'MHO_ADMIN'`, `'MHO_HEAD'`. |
 | `position` | `VARCHAR(100)` | `YES` | `NULL` | Job designation (e.g., "Staff Nurse II", "Rural Health Physician"). |
 | `vacation_credits`| `DECIMAL(5,2)` | `YES` | `15.00` | Baseline allocated vacation credits. |
 | `sick_credits` | `DECIMAL(5,2)` | `YES` | `15.00` | Baseline allocated sick credits. |
@@ -151,7 +151,7 @@ The following schema maps the legacy MySQL architecture to modern Supabase Postg
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 2. Custom Role Enum
-CREATE TYPE user_role AS ENUM ('STAFF', 'MHO_ADMIN', 'MHO_HEAD', 'LGU_HR');
+CREATE TYPE user_role AS ENUM ('STAFF', 'MHO_ADMIN', 'MHO_HEAD');
 CREATE TYPE leave_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- 3. Profiles Table (Linked to Supabase Auth)
@@ -225,18 +225,18 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leave_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Profiles: Users can view own profile; Admins/HR can view all
+-- Profiles: Users can view own profile; Admins/Head can view all
 CREATE POLICY "Profiles view policy" ON public.profiles
 FOR SELECT USING (
     auth.uid() = id OR 
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'))
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('MHO_ADMIN', 'MHO_HEAD'))
 );
 
--- Leave Applications: Staff view own; Admins/Head/HR view all
+-- Leave Applications: Staff view own; Admins/Head view all
 CREATE POLICY "Leave applications select policy" ON public.leave_applications
 FOR SELECT USING (
     auth.uid() = user_id OR 
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'))
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('MHO_ADMIN', 'MHO_HEAD'))
 );
 
 -- Leave Applications: Staff can submit applications
@@ -252,9 +252,9 @@ FOR UPDATE USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('MHO_ADMIN', 'MHO_HEAD'))
 );
 
--- Audit Logs: Viewable by Admins and HR
+-- Audit Logs: Viewable by Head only
 CREATE POLICY "Audit logs select policy" ON public.audit_logs
 FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR'))
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'MHO_HEAD')
 );
 ```
