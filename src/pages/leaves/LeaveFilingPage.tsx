@@ -19,6 +19,8 @@ import { countWeekdays } from '../../utils/weekday'
 import { PageHeader } from '../../components/PageHeader'
 import { NotAuthorizedFallback } from '../../components/NotAuthorizedFallback'
 import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
+import { DssAdvisoryCard } from '../../components/DssAdvisoryCard'
+import { parseDssFromRpc } from '../../lib/dssPresenter'
 import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord } from '../../lib/leaveTypes'
 import { useSystemSettings } from '../../lib/systemSettings'
 import type { Database, CommutationType, LeaveDetails } from '../../types/database.types'
@@ -242,6 +244,16 @@ export const LeaveFilingPage: React.FC = () => {
   }, [effectiveUserId, leaveType, totalDays, startDate, endDate, effectiveApplicantProfile, currentUser, leaveTypes])
 
   const selectedTypeConfig = leaveTypes.find((t) => t.code === leaveType)
+
+  const dssViewModel = useMemo(() => {
+    if (!startDate || !endDate || (!dssRecommendation && !dssReason)) return null
+    return parseDssFromRpc(dssRecommendation, dssReason, {
+      leaveTypeName: selectedTypeConfig?.name || leaveType,
+      startDate,
+      endDate,
+      requestedDays: totalDays,
+    })
+  }, [startDate, endDate, dssRecommendation, dssReason, selectedTypeConfig, leaveType, totalDays])
 
   // Earliest allowed start date according to leave_types configuration
   const minStartDate = useMemo(() => {
@@ -925,42 +937,11 @@ export const LeaveFilingPage: React.FC = () => {
 
             {/* Live DSS Advisory Evaluation */}
             {startDate && endDate && (
-              <div
-                className={`rounded-xl border p-3.5 text-xs transition-all ${
-                  isDssLoading
-                    ? 'border-slate-200 bg-slate-50 text-slate-600'
-                    : dssRecommendation === 'RECOMMENDED'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                    : 'border-amber-200 bg-amber-50 text-amber-900'
-                }`}
-              >
-                <div className="flex items-center justify-between font-bold mb-1">
-                  <span className="flex items-center gap-1.5">
-                    {isDssLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
-                    ) : dssRecommendation === 'RECOMMENDED' ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    ) : (
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                    )}
-                    Section 7.B Pre-evaluation (DSS Engine):
-                  </span>
-                  {!isDssLoading && (
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-2xs font-bold uppercase ${
-                        dssRecommendation === 'RECOMMENDED'
-                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                          : 'bg-amber-100 text-amber-900 border border-amber-200'
-                      }`}
-                    >
-                      {dssRecommendation === 'RECOMMENDED' ? 'For Approval' : 'For Disapproval / Needs Review'}
-                    </span>
-                  )}
-                </div>
-                <div className="text-2xs leading-relaxed">
-                  {isDssLoading ? 'Evaluating leave credit balance and clinical coverage...' : dssReason}
-                </div>
-              </div>
+              <DssAdvisoryCard
+                viewModel={dssViewModel}
+                isLoading={isDssLoading}
+                isAdmin={currentUser?.role === 'MHO_ADMIN'}
+              />
             )}
 
             {/* Remarks / Justification */}

@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { LeaveTypeBadge } from './LeaveTypeBadge'
 import { DssBadge } from './DssBadge'
+import { DssAdvisoryCard } from './DssAdvisoryCard'
+import { parseDssFromColumn } from '../lib/dssPresenter'
 import type { Database, CreditsSnapshot } from '../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
@@ -51,6 +53,15 @@ export const CSForm6DetailModal: React.FC<CSForm6DetailModalProps> = ({
     const rest = parts.slice(0, parts.length - 1).join(' ')
     return `${last}, ${rest}`
   }
+
+  const dssViewModel = application.dss_recommendation
+    ? parseDssFromColumn(application.dss_recommendation, {
+        leaveTypeName: application.leave_type,
+        startDate: application.start_date,
+        endDate: application.end_date,
+        requestedDays: application.working_days ?? application.total_days,
+      })
+    : null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
@@ -310,7 +321,7 @@ export const CSForm6DetailModal: React.FC<CSForm6DetailModalProps> = ({
               <span>7.B Recommendation (DSS Engine Evaluation)</span>
               <DssBadge recommendation={application.dss_recommendation} />
             </div>
-            <div className="p-3.5 space-y-2">
+            <div className="p-3.5 space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-slate-500">System Recommendation:</span>
                 <span
@@ -327,6 +338,11 @@ export const CSForm6DetailModal: React.FC<CSForm6DetailModalProps> = ({
                 <p className="text-2xs text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-200">
                   <strong className="text-slate-900">Reason / Basis:</strong> {application.recommendation_reason}
                 </p>
+              )}
+
+              {/* Enhanced Presentation Card */}
+              {dssViewModel && (
+                <DssAdvisoryCard viewModel={dssViewModel} isAdmin={true} />
               )}
             </div>
           </div>
