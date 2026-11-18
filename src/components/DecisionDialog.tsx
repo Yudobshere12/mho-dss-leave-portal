@@ -113,8 +113,8 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="w-full max-w-lg my-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft space-y-5 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-lg my-auto sm:my-6 max-h-[92dvh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-soft space-y-5 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center gap-3">
           <div
