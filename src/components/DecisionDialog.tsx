@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react'
 import {
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Loader2,
   Calendar,
 } from 'lucide-react'
@@ -65,10 +64,7 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
     }
   }, [application, action])
 
-  if (!isOpen || !application || !action) return null
-
-  const isApprove = action === 'APPROVE'
-  const workingDays = application.working_days ?? application.total_days
+  const workingDays = application ? (application.working_days ?? application.total_days) : 0
 
   const dssViewModel = useMemo(() => {
     if (!application?.dss_recommendation) return null
@@ -79,6 +75,10 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
       requestedDays: workingDays,
     })
   }, [application, workingDays])
+
+  if (!isOpen || !application || !action) return null
+
+  const isApprove = action === 'APPROVE'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
