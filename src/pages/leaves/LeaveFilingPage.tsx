@@ -1,71 +1,91 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   FileSignature,
-  UserCheck,
-  UserPlus,
-  Clock,
-  AlertTriangle,
-  CheckCircle2,
-  AlertCircle,
+  Calendar,
   Send,
   Loader2,
+  AlertCircle,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  UserCheck,
+  UserPlus,
+  Building,
+  User,
 } from 'lucide-react'
 import { useDevRole } from '../../context/DevRoleContext'
-import { useAuth } from '../../context/AuthContext'
-import { isActionAllowed } from '../../lib/permissions'
-import { countWeekdays } from '../../utils/weekday'
 import { supabase } from '../../lib/supabase'
+import { countWeekdays } from '../../utils/weekday'
 import { PageHeader } from '../../components/PageHeader'
 import { NotAuthorizedFallback } from '../../components/NotAuthorizedFallback'
-import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord } from '../../lib/leaveTypes'
 import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
-import type { LeaveType } from '../../types/database.types'
+import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord } from '../../lib/leaveTypes'
+import { useSystemSettings } from '../../lib/systemSettings'
+import type { Database, CommutationType, LeaveDetails } from '../../types/database.types'
+
+type LeaveType = Database['public']['Tables']['leave_applications']['Row']['leave_type']
+
+// Helper to format full name Last, First, Middle
+function formatLastFirst(fullName: string | null | undefined): string {
+  if (!fullName) return ''
+  const parts = fullName.trim().split(/\s+/)
+  if (parts.length <= 1) return fullName
+  const last = parts[parts.length - 1]
+  const rest = parts.slice(0, parts.length - 1).join(' ')
+  return `${last}, ${rest}`
+}
 
 export const LeaveFilingPage: React.FC = () => {
   const { currentUser, availableProfiles } = useDevRole()
-  const { role: authRole } = useAuth()
-  const activeRole = authRole || currentUser.role
+  const { settings } = useSystemSettings()
 
-  const canFileSelf = isActionAllowed(activeRole, 'leave:file_self')
-  const canFileOnBehalf = isActionAllowed(activeRole, 'leave:file_on_behalf')
-
-  // Available leave types (fetched or fallback)
   const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>(FALLBACK_LEAVE_TYPES)
-
-  // Filing Mode: 'SELF' vs 'ON_BEHALF' (only visible to MHO_ADMIN)
   const [filingMode, setFilingMode] = useState<'SELF' | 'ON_BEHALF'>('SELF')
 
-  // Selected employee target when filing on behalf
-  const [targetType, setTargetType] = useState<string>('REGISTERED')
+  // On-Behalf specific sub-state
+  const [targetType, setTargetType] = useState<'REGISTERED' | 'WALK_IN'>('REGISTERED')
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [walkInName, setWalkInName] = useState<string>('')
 
-  // Form Fields
+  // Form Fields - Civil Service Form No. 6 (Revised 2020)
+  const [positionAtFiling, setPositionAtFiling] = useState<string>('')
   const [leaveType, setLeaveType] = useState<LeaveType>('VL')
-  const [otherLeaveType, setOtherLeaveType] = useState<string>('')
-  const [startDate, setStartDate] = useState<string>('')
-  const [endDate, setEndDate] = useState<string>('')
-  const [reason, setReason] = useState<string>('')
+  const [otherLeaveType, setOtherLeaveType] = useState('')
 
-  const selectedTypeConfig = useMemo(
-    () => leaveTypes.find((t) => t.code === leaveType) || leaveTypes[0],
-    [leaveTypes, leaveType]
-  )
+  // Section 6.B Details fields
+  const [detailLocation, setDetailLocation] = useState<'within_philippines' | 'abroad'>('within_philippines')
+  const [detailCareType, setDetailCareType] = useState<'in_hospital' | 'out_patient'>('out_patient')
+  const [detailIllness, setDetailIllness] = useState<string>('')
+  const [detailStudyPurpose, setDetailStudyPurpose] = useState<'masters_completion' | 'bar_board_review'>('masters_completion')
+  const [detailOtherPurpose, setDetailOtherPurpose] = useState<'' | 'monetization' | 'terminal_leave'>('')
+  const [detailSpecify, setDetailSpecify] = useState<string>('')
 
-  // Calculated duration
-  const totalDays = countWeekdays(startDate, endDate)
+  // Dates and Working Days
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [commutation, setCommutation] = useState<CommutationType>('not_requested')
+  const [reason, setReason] = useState('')
 
-  // DSS Preview State
+  // UI state
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Live DSS RPC check state
   const [dssRecommendation, setDssRecommendation] = useState<string>('')
   const [dssReason, setDssReason] = useState<string>('')
   const [isDssLoading, setIsDssLoading] = useState<boolean>(false)
 
-  // Submission State
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+  const canFileSelf = ['STAFF', 'MHO_ADMIN', 'MHO_HEAD'].includes(currentUser.role)
+  const canFileOnBehalf = ['MHO_ADMIN', 'MHO_HEAD'].includes(currentUser.role)
 
-  // Determine effective applicant
+  // Working days count
+  const totalDays = useMemo(() => {
+    if (!startDate || !endDate) return 0
+    return countWeekdays(startDate, endDate)
+  }, [startDate, endDate])
+
+  // Effective applicant profile
   const effectiveUserId =
     filingMode === 'SELF'
       ? currentUser.id
@@ -81,6 +101,17 @@ export const LeaveFilingPage: React.FC = () => {
       : targetType === 'REGISTERED'
       ? effectiveApplicantProfile?.full_name || ''
       : walkInName.trim()
+
+  // Update position prefill whenever applicant changes
+  useEffect(() => {
+    if (filingMode === 'SELF') {
+      setPositionAtFiling(currentUser.position || '')
+    } else if (targetType === 'REGISTERED' && effectiveApplicantProfile) {
+      setPositionAtFiling(effectiveApplicantProfile.position || '')
+    } else {
+      setPositionAtFiling('')
+    }
+  }, [filingMode, targetType, effectiveApplicantProfile, currentUser])
 
   // Load dynamic leave types from DB
   useEffect(() => {
@@ -113,7 +144,7 @@ export const LeaveFilingPage: React.FC = () => {
     }
   }, [availableProfiles, selectedUserId])
 
-  // Live DSS RPC check effect
+  // Live DSS check effect
   useEffect(() => {
     let isCancelled = false
 
@@ -208,7 +239,14 @@ export const LeaveFilingPage: React.FC = () => {
       isCancelled = true
       clearTimeout(timer)
     }
-  }, [effectiveUserId, leaveType, totalDays, startDate, endDate, effectiveApplicantProfile, currentUser])
+  }, [effectiveUserId, leaveType, totalDays, startDate, endDate, effectiveApplicantProfile, currentUser, leaveTypes])
+
+  const selectedTypeConfig = leaveTypes.find((t) => t.code === leaveType)
+  const isVLorSPL = ['VL', 'FL', 'SPL'].includes(leaveType)
+  const isSL = leaveType === 'SL'
+  const isSLBW = leaveType === 'SLBW'
+  const isStudy = leaveType === 'STUDY'
+  const isOther = leaveType === 'OTHER'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -235,6 +273,43 @@ export const LeaveFilingPage: React.FC = () => {
       return
     }
 
+    // Prepare details payload according to CS Form 6 Section 6.B rules
+    const detailsPayload: LeaveDetails = {}
+
+    if (isVLorSPL) {
+      if (!detailSpecify.trim()) {
+        setSubmitError('Please specify the location/destination for vacation/privilege leave.')
+        return
+      }
+      detailsPayload.location = detailLocation
+      detailsPayload.specify = detailSpecify.trim()
+    } else if (isSL) {
+      if (!detailIllness.trim()) {
+        setSubmitError('Please specify the illness or medical condition for sick leave.')
+        return
+      }
+      detailsPayload.care_type = detailCareType
+      detailsPayload.illness = detailIllness.trim()
+    } else if (isSLBW) {
+      if (!detailIllness.trim()) {
+        setSubmitError('Please specify the illness or gynecological disorder for Special Leave Benefits for Women.')
+        return
+      }
+      detailsPayload.illness = detailIllness.trim()
+    } else if (isStudy) {
+      detailsPayload.study_purpose = detailStudyPurpose
+    } else if (isOther) {
+      if (!detailSpecify.trim()) {
+        setSubmitError('Please specify details for other leave category.')
+        return
+      }
+      detailsPayload.specify = detailSpecify.trim()
+    }
+
+    if (detailOtherPurpose) {
+      detailsPayload.other_purpose = detailOtherPurpose
+    }
+
     if (effectiveApplicantProfile) {
       const activeTypeConfig = leaveTypes.find((t) => t.code === leaveType)
       const chargedTo = activeTypeConfig?.charged_to ?? 'NONE'
@@ -256,16 +331,15 @@ export const LeaveFilingPage: React.FC = () => {
       const payload = {
         user_id: effectiveUserId,
         employee_name: effectiveEmployeeName,
+        position_at_filing: positionAtFiling.trim() || null,
         leave_type: leaveType,
-        other_leave_type: leaveType === 'OTHER' ? otherLeaveType : null,
+        other_leave_type: leaveType === 'OTHER' ? otherLeaveType.trim() || null : null,
         start_date: startDate,
         end_date: endDate,
-        total_days: totalDays,
+        details: detailsPayload,
+        commutation,
         reason: reason.trim() || null,
         status: 'PENDING' as const,
-        dss_recommendation: dssRecommendation
-          ? `${dssRecommendation} (${dssReason})`
-          : 'RECOMMENDED (PENDING REVIEW)',
         created_by_admin_id: filingMode === 'ON_BEHALF' ? currentUser.id : null,
       }
 
@@ -275,12 +349,18 @@ export const LeaveFilingPage: React.FC = () => {
         throw new Error(error.message)
       }
 
+      const inserted = data?.[0]
+      const controlNum = inserted?.control_number || `Leave-${inserted?.id}`
       setSubmitSuccess(
-        `Leave application #${data?.[0]?.id || ''} successfully filed and queued for review.`
+        `Leave application ${controlNum} successfully filed under CS Form No. 6 and queued for executive review.`
       )
 
+      // Reset form
       setReason('')
       setOtherLeaveType('')
+      setDetailSpecify('')
+      setDetailIllness('')
+      setDetailOtherPurpose('')
       if (targetType === 'WALK_IN') setWalkInName('')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -299,16 +379,22 @@ export const LeaveFilingPage: React.FC = () => {
     )
   }
 
+  const todayFormatted = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <PageHeader
-        title={filingMode === 'ON_BEHALF' ? 'On-Behalf Filing' : 'Apply for Leave'}
+        title={filingMode === 'ON_BEHALF' ? 'On-Behalf Leave Filing' : 'Apply for Leave'}
       />
 
-      {/* Mode Switcher: visible strictly to MHO_ADMIN */}
+      {/* Mode Switcher: visible to MHO_ADMIN and MHO_HEAD */}
       {canFileOnBehalf && (
         <div className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/70 p-2 text-xs">
-          <span className="font-semibold text-teal-900 px-2">Mode:</span>
+          <span className="font-semibold text-teal-900 px-2">Filing Mode:</span>
           <button
             type="button"
             onClick={() => setFilingMode('SELF')}
@@ -319,7 +405,7 @@ export const LeaveFilingPage: React.FC = () => {
             }`}
           >
             <UserCheck className="h-3.5 w-3.5" />
-            Self
+            File for Myself
           </button>
           <button
             type="button"
@@ -331,273 +417,548 @@ export const LeaveFilingPage: React.FC = () => {
             }`}
           >
             <UserPlus className="h-3.5 w-3.5" />
-            On Behalf / Walk-in
+            File On Behalf / Walk-in
           </button>
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs space-y-5">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-          <FileSignature className="h-4 w-4 text-teal-700" />
-          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-            {filingMode === 'ON_BEHALF' ? 'On-Behalf Filing Form' : 'Leave Request Form'}
-          </h2>
+      {/* Main CS Form No. 6 Container */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-soft overflow-hidden">
+        {/* Banner Header */}
+        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <FileSignature className="h-5 w-5 text-teal-400" />
+            <div>
+              <span className="text-3xs uppercase tracking-widest text-slate-400 font-semibold block">
+                Civil Service Form No. 6 (Application for Leave, Revised 2020)
+              </span>
+              <h2 className="text-sm font-bold text-white">
+                {settings.office_name} &bull; Municipality of Manolo Fortich
+              </h2>
+            </div>
+          </div>
+          <span className="text-2xs font-mono font-medium text-teal-300 bg-teal-950/60 border border-teal-800/80 px-2 py-0.5 rounded-md hidden sm:inline-block">
+            CS Form 6
+          </span>
         </div>
 
-        {submitSuccess && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800 flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <div className="font-bold">Application Submitted</div>
-              <div>{submitSuccess}</div>
-            </div>
-          </div>
-        )}
-
-        {submitError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800 flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-            <div>
-              <div className="font-bold">Submission Error</div>
-              <div>{submitError}</div>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {filingMode === 'ON_BEHALF' && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2.5">
-              <label className="block text-2xs font-bold text-slate-700 uppercase tracking-wider">
-                Filing Target
-              </label>
-
-              <div className="flex gap-4 text-xs font-medium text-slate-700">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="targetType"
-                    checked={targetType === 'REGISTERED'}
-                    onChange={() => setTargetType('REGISTERED')}
-                    className="text-teal-700 focus:ring-teal-700 accent-teal-700"
-                  />
-                  Registered Staff
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="targetType"
-                    checked={targetType === 'WALK_IN'}
-                    onChange={() => setTargetType('WALK_IN')}
-                    className="text-teal-700 focus:ring-teal-700 accent-teal-700"
-                  />
-                  Walk-in Personnel
-                </label>
+        <div className="p-5 md:p-6 space-y-5">
+          {submitSuccess && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900 flex items-start gap-2.5">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold text-sm">Application Filed Successfully</div>
+                <div className="mt-0.5 text-emerald-800">{submitSuccess}</div>
               </div>
+            </div>
+          )}
 
-              {targetType === 'REGISTERED' ? (
-                <div>
-                  <label className="block text-2xs font-semibold text-slate-600 mb-1">
-                    Staff Member *
+          {submitError && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-900 flex items-start gap-2.5">
+              <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold text-sm">Submission Error</div>
+                <div className="mt-0.5 text-rose-800">{submitError}</div>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6 text-xs">
+            {/* On-Behalf Target Selector */}
+            {filingMode === 'ON_BEHALF' && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2.5">
+                <label className="block text-2xs font-bold text-slate-700 uppercase tracking-wider">
+                  Target Applicant
+                </label>
+                <div className="flex gap-4 text-xs font-medium text-slate-700">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetType"
+                      checked={targetType === 'REGISTERED'}
+                      onChange={() => setTargetType('REGISTERED')}
+                      className="text-teal-700 focus:ring-teal-700 accent-teal-700"
+                    />
+                    Registered Employee
                   </label>
-                  <select
-                    value={effectiveUserId || ''}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-                  >
-                    {availableProfiles.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.full_name} ({p.role})
-                      </option>
-                    ))}
-                  </select>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetType"
+                      checked={targetType === 'WALK_IN'}
+                      onChange={() => setTargetType('WALK_IN')}
+                      className="text-teal-700 focus:ring-teal-700 accent-teal-700"
+                    />
+                    Walk-in Personnel (Non-portal)
+                  </label>
                 </div>
-              ) : (
+
+                {targetType === 'REGISTERED' ? (
+                  <div>
+                    <label className="block text-2xs font-semibold text-slate-600 mb-1">
+                      Select Personnel *
+                    </label>
+                    <select
+                      value={effectiveUserId || ''}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
+                    >
+                      {availableProfiles.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {formatLastFirst(p.full_name)} ({p.position || p.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-2xs font-semibold text-slate-600 mb-1">
+                      Walk-in Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={walkInName}
+                      onChange={(e) => setWalkInName(e.target.value)}
+                      placeholder="e.g. Dela Cruz, Juan M."
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Section 1 to 5: Form Header Fields (Form Order) */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/80 space-y-3">
+              <span className="text-2xs uppercase tracking-wider font-bold text-slate-600 block border-b border-slate-200 pb-1.5">
+                Form Header Information
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                {/* 1. Office / Agency */}
                 <div>
-                  <label className="block text-2xs font-semibold text-slate-600 mb-1">
-                    Walk-in Full Name *
+                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
+                    1. Office / Agency
+                  </label>
+                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-800 font-semibold truncate flex items-center gap-1.5">
+                    <Building className="h-3 w-3 text-slate-400 shrink-0" />
+                    <span>{settings.office_name}</span>
+                  </div>
+                </div>
+
+                {/* 2. Name (Last, First, Middle) */}
+                <div>
+                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
+                    2. Name (Last, First, Middle)
+                  </label>
+                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-900 font-semibold truncate flex items-center gap-1.5">
+                    <User className="h-3 w-3 text-slate-400 shrink-0" />
+                    <span>{formatLastFirst(effectiveEmployeeName) || 'Applicant Name'}</span>
+                  </div>
+                </div>
+
+                {/* 3. Date of Filing */}
+                <div>
+                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
+                    3. Date of Filing
+                  </label>
+                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-800 font-semibold flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
+                    <span>{todayFormatted}</span>
+                  </div>
+                </div>
+
+                {/* 4. Position */}
+                <div>
+                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
+                    4. Position *
                   </label>
                   <input
                     type="text"
                     required
-                    value={walkInName}
-                    onChange={(e) => setWalkInName(e.target.value)}
-                    placeholder="Full name..."
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                    value={positionAtFiling}
+                    onChange={(e) => setPositionAtFiling(e.target.value)}
+                    placeholder="e.g. Nurse II, Midwife III"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 font-semibold focus:border-teal-700 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Balance Badge if registered applicant */}
+              {effectiveApplicantProfile && (
+                <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-2xs text-slate-600">
+                  <span>Current Available Balances:</span>
+                  <div className="flex gap-3 font-mono font-medium">
+                    <span>
+                      Vacation: <strong className="text-teal-900">{effectiveApplicantProfile.vacation_credits.toFixed(2)}</strong>
+                    </span>
+                    <span>
+                      Sick: <strong className="text-emerald-800">{effectiveApplicantProfile.sick_credits.toFixed(2)}</strong>
+                    </span>
+                    <span>
+                      Special Emergency: <strong className="text-amber-800">{effectiveApplicantProfile.emergency_credits.toFixed(2)}</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Section 6.A: Type of Leave */}
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    6.A Type of Leave to be Availed of *
+                  </label>
+                  {selectedTypeConfig && (
+                    <LeaveTypeBadge codeOrName={selectedTypeConfig.code} showName={false} />
+                  )}
+                </div>
+                <select
+                  value={leaveType}
+                  onChange={(e) => setLeaveType(e.target.value as LeaveType)}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-900 font-medium focus:border-teal-700 focus:bg-white focus:outline-hidden"
+                >
+                  {leaveTypes.map((t) => (
+                    <option key={t.code} value={t.code}>
+                      [{t.code}] {t.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedTypeConfig?.legal_basis && (
+                  <p className="mt-1 text-2xs text-slate-500 italic">
+                    Legal Basis: {selectedTypeConfig.legal_basis}
+                  </p>
+                )}
+                {selectedTypeConfig?.requires_advance_filing && (
+                  <p className="mt-0.5 text-2xs text-amber-700 font-medium">
+                    &bull; Notice requirement: at least {selectedTypeConfig.min_advance_days} days notice before leave start date.
+                  </p>
+                )}
+              </div>
+
+              {leaveType === 'OTHER' && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Specific Leave Category *</label>
+                  <input
+                    type="text"
+                    required
+                    value={otherLeaveType}
+                    onChange={(e) => setOtherLeaveType(e.target.value)}
+                    placeholder="e.g. Special Leave Benefit..."
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden"
                   />
                 </div>
               )}
             </div>
-          )}
 
-          {effectiveApplicantProfile && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-              <div>
-                <span className="font-bold text-slate-900">{effectiveApplicantProfile.full_name}</span>
-                <span className="text-slate-500 ml-1">
-                  ({effectiveApplicantProfile.position || effectiveApplicantProfile.role})
-                </span>
-              </div>
-              <div className="flex gap-3 text-2xs font-medium">
-                <span>
-                  VL: <strong className="text-teal-800">{effectiveApplicantProfile.vacation_credits.toFixed(1)}</strong>
-                </span>
-                <span>
-                  SL: <strong className="text-emerald-700">{effectiveApplicantProfile.sick_credits.toFixed(1)}</strong>
-                </span>
-                <span>
-                  EL: <strong className="text-amber-700">{effectiveApplicantProfile.emergency_credits.toFixed(1)}</strong>
-                </span>
-              </div>
-            </div>
-          )}
+            {/* Section 6.B: Details of Leave (Conditional per Form 6 Rules) */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/70 space-y-3.5">
+              <span className="text-2xs uppercase tracking-wider font-bold text-slate-800 block border-b border-slate-200 pb-1.5">
+                6.B Details of Leave (Specific Circumstances)
+              </span>
 
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block font-semibold text-slate-700">Category *</label>
-                {selectedTypeConfig && (
-                  <LeaveTypeBadge codeOrName={selectedTypeConfig.code} showName={false} />
-                )}
-              </div>
-              <select
-                value={leaveType}
-                onChange={(e) => setLeaveType(e.target.value as LeaveType)}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-              >
-                {leaveTypes.map((t) => (
-                  <option key={t.code} value={t.code}>
-                    [{t.code}] {t.name}
-                  </option>
-                ))}
-              </select>
-              {selectedTypeConfig?.legal_basis && (
-                <p className="mt-1 text-2xs text-slate-500 italic">
-                  Legal Basis: {selectedTypeConfig.legal_basis}
-                </p>
+              {/* Vacation / Forced / Special Privilege Leave */}
+              {isVLorSPL && (
+                <div className="space-y-3">
+                  <div className="flex gap-4 text-xs font-medium text-slate-800">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="detailLocation"
+                        value="within_philippines"
+                        checked={detailLocation === 'within_philippines'}
+                        onChange={() => setDetailLocation('within_philippines')}
+                        className="text-teal-700 accent-teal-700"
+                      />
+                      Within the Philippines
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="detailLocation"
+                        value="abroad"
+                        checked={detailLocation === 'abroad'}
+                        onChange={() => setDetailLocation('abroad')}
+                        className="text-teal-700 accent-teal-700"
+                      />
+                      Abroad
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                      Specify Location / Destination *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={detailSpecify}
+                      onChange={(e) => setDetailSpecify(e.target.value)}
+                      placeholder={
+                        detailLocation === 'within_philippines'
+                          ? 'e.g. Davao City, Cagayan de Oro'
+                          : 'e.g. Tokyo, Japan'
+                      }
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
               )}
-              {selectedTypeConfig?.requires_advance_filing && (
-                <p className="mt-0.5 text-2xs text-amber-700 font-medium">
-                  &bull; Requires advance filing (at least {selectedTypeConfig.min_advance_days} days notice before leave start).
-                </p>
+
+              {/* Sick Leave */}
+              {isSL && (
+                <div className="space-y-3">
+                  <div className="flex gap-4 text-xs font-medium text-slate-800">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="detailCareType"
+                        value="in_hospital"
+                        checked={detailCareType === 'in_hospital'}
+                        onChange={() => setDetailCareType('in_hospital')}
+                        className="text-teal-700 accent-teal-700"
+                      />
+                      In Hospital (Specify Illness)
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="detailCareType"
+                        value="out_patient"
+                        checked={detailCareType === 'out_patient'}
+                        onChange={() => setDetailCareType('out_patient')}
+                        className="text-teal-700 accent-teal-700"
+                      />
+                      Out Patient (Specify Illness)
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                      Illness / Diagnosis *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={detailIllness}
+                      onChange={(e) => setDetailIllness(e.target.value)}
+                      placeholder="e.g. Acute Upper Respiratory Tract Infection, Dengue..."
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
               )}
-            </div>
 
-            {leaveType === 'OTHER' && (
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Details *</label>
-                <input
-                  type="text"
-                  required
-                  value={otherLeaveType}
-                  onChange={(e) => setOtherLeaveType(e.target.value)}
-                  placeholder="e.g. Bereavement, Quarantine..."
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-                />
-              </div>
-            )}
-          </div>
+              {/* Special Leave Benefits for Women */}
+              {isSLBW && (
+                <div>
+                  <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                    Illness / Gynecological Disorder *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={detailIllness}
+                    onChange={(e) => setDetailIllness(e.target.value)}
+                    placeholder="Specify gynecological disorder / surgery details..."
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
+                  />
+                </div>
+              )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Start Date *</label>
-              <input
-                type="date"
-                required
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">End Date *</label>
-              <input
-                type="date"
-                required
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 font-medium text-slate-700">
-              <Clock className="h-3.5 w-3.5 text-teal-700" />
-              Duration (weekdays only):
-            </span>
-            <span className={`font-bold text-xs ${totalDays > 0 ? 'text-teal-800' : 'text-slate-400'}`}>
-              {totalDays} working day(s)
-            </span>
-          </div>
-
-          {startDate && endDate && (
-            <div
-              className={`rounded-xl border p-3 text-xs transition-all ${
-                isDssLoading
-                  ? 'border-slate-200 bg-slate-50 text-slate-600'
-                  : dssRecommendation === 'RECOMMENDED'
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                  : 'border-amber-200 bg-amber-50 text-amber-900'
-              }`}
-            >
-              <div className="flex items-center justify-between font-bold mb-1">
-                <span className="flex items-center gap-1.5">
-                  {isDssLoading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
-                  ) : dssRecommendation === 'RECOMMENDED' ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                  )}
-                  DSS Advisory:
-                </span>
-                {!isDssLoading && (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-2xs font-bold uppercase ${
-                      dssRecommendation === 'RECOMMENDED'
-                        ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                        : 'bg-amber-100 text-amber-900 border border-amber-200'
-                    }`}
+              {/* Study Leave */}
+              {isStudy && (
+                <div>
+                  <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                    Study Purpose *
+                  </label>
+                  <select
+                    value={detailStudyPurpose}
+                    onChange={(e) => setDetailStudyPurpose(e.target.value as 'masters_completion' | 'bar_board_review')}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
                   >
-                    {dssRecommendation || 'CALCULATING'}
-                  </span>
-                )}
+                    <option value="masters_completion">Completion of Master's Degree</option>
+                    <option value="bar_board_review">BAR / Board Examination Review</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Other Purpose (Monetization / Terminal) */}
+              <div>
+                <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                  Other Purpose (Optional)
+                </label>
+                <select
+                  value={detailOtherPurpose}
+                  onChange={(e) => setDetailOtherPurpose(e.target.value as '' | 'monetization' | 'terminal_leave')}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
+                >
+                  <option value="">None / Standard Leave</option>
+                  <option value="monetization">Monetization of Leave Credits</option>
+                  <option value="terminal_leave">Terminal Leave</option>
+                </select>
               </div>
-              <div className="text-2xs leading-relaxed">
-                {isDssLoading ? 'Evaluating balance and duty staff coverage...' : dssReason}
+
+              {/* Generic specify for OTHER or other categories */}
+              {isOther && (
+                <div>
+                  <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                    Specific Details / Justification *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={detailSpecify}
+                    onChange={(e) => setDetailSpecify(e.target.value)}
+                    placeholder="Provide required details..."
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:outline-hidden"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Section 6.C: Inclusive Dates & Working Days */}
+            <div className="space-y-3">
+              <span className="text-2xs uppercase tracking-wider font-bold text-slate-800 block">
+                6.C Inclusive Dates & Number of Working Days
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Start Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">End Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                  <Clock className="h-3.5 w-3.5 text-teal-700" />
+                  Working Days (Excluding Weekends):
+                </span>
+                <span className={`font-bold text-sm ${totalDays > 0 ? 'text-teal-900' : 'text-slate-400'}`}>
+                  {totalDays} day(s)
+                </span>
               </div>
             </div>
-          )}
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Reason / Remarks</label>
-            <textarea
-              rows={2}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Justification remarks..."
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-            />
-          </div>
+            {/* Section 6.D: Commutation */}
+            <div>
+              <span className="text-2xs uppercase tracking-wider font-bold text-slate-800 block mb-1.5">
+                6.D Commutation
+              </span>
+              <div className="flex gap-5 text-xs font-medium text-slate-800">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="commutation"
+                    value="not_requested"
+                    checked={commutation === 'not_requested'}
+                    onChange={() => setCommutation('not_requested')}
+                    className="text-teal-700 accent-teal-700"
+                  />
+                  Not Requested
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="commutation"
+                    value="requested"
+                    checked={commutation === 'requested'}
+                    onChange={() => setCommutation('requested')}
+                    className="text-teal-700 accent-teal-700"
+                  />
+                  Requested
+                </label>
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting || totalDays <= 0}
-            className="w-full flex items-center justify-center gap-1.5 rounded-full bg-teal-700 px-4 py-2.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <Send className="h-3.5 w-3.5" />
-                Submit Application
-              </>
+            {/* Live DSS Advisory Evaluation */}
+            {startDate && endDate && (
+              <div
+                className={`rounded-xl border p-3.5 text-xs transition-all ${
+                  isDssLoading
+                    ? 'border-slate-200 bg-slate-50 text-slate-600'
+                    : dssRecommendation === 'RECOMMENDED'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                    : 'border-amber-200 bg-amber-50 text-amber-900'
+                }`}
+              >
+                <div className="flex items-center justify-between font-bold mb-1">
+                  <span className="flex items-center gap-1.5">
+                    {isDssLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
+                    ) : dssRecommendation === 'RECOMMENDED' ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                    )}
+                    Section 7.B Pre-evaluation (DSS Engine):
+                  </span>
+                  {!isDssLoading && (
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-2xs font-bold uppercase ${
+                        dssRecommendation === 'RECOMMENDED'
+                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                          : 'bg-amber-100 text-amber-900 border border-amber-200'
+                      }`}
+                    >
+                      {dssRecommendation === 'RECOMMENDED' ? 'For Approval' : 'For Disapproval / Needs Review'}
+                    </span>
+                  )}
+                </div>
+                <div className="text-2xs leading-relaxed">
+                  {isDssLoading ? 'Evaluating leave credit balance and clinical coverage...' : dssReason}
+                </div>
+              </div>
             )}
-          </button>
-        </form>
+
+            {/* Remarks / Justification */}
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Additional Remarks / Notes (Optional)
+              </label>
+              <textarea
+                rows={2}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Optional notes or remarks..."
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting || totalDays <= 0}
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating CS Form 6 & Filing...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Submit CS Form No. 6 Application
+                </>
+              )}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
