@@ -28,7 +28,7 @@ export const PendingApprovalScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-radial from-slate-50 via-teal-50/20 to-slate-100 p-4">
+    <div className="min-h-[100dvh] w-full flex items-center justify-center bg-radial from-slate-50 via-teal-50/20 to-slate-100 p-4">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
