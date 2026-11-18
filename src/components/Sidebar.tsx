@@ -229,7 +229,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
   useEffect(() => {
     setIsHovered(false)
     if (onClose) onClose()
-  }, [location.pathname, onClose])
+  }, [location.pathname])
+
+  // Lock body scroll on mobile and handle Escape key
+  useEffect(() => {
+    if (!isOpen) return
+
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose])
 
   const userInitials =
     currentUser.full_name
@@ -359,7 +379,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       {/* Mobile Drawer Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-2xs md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -367,19 +387,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
       {/* Mobile Drawer Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-200 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Mobile Navigation"
+        aria-hidden={!isOpen}
       >
         {renderContent(true, true)}
       </aside>
 
-      {/* Desktop Persistent Sidebar with Hover Expand */}
+      {/* Desktop Persistent Sidebar with Hover Expand (at and above lg: 1024px) */}
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-[width] duration-200 ease-in-out ${
+        className={`hidden lg:flex flex-col fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-[width] duration-200 ease-in-out ${
           isHovered ? 'w-64 shadow-xl' : 'w-16 shadow-xs'
         }`}
         aria-label="Desktop Navigation"
