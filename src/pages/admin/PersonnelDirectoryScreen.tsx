@@ -65,14 +65,10 @@ async function fetchPersonnel(): Promise<PersonnelRow[]> {
     const uid = a.user_id
     if (!uid) continue
     if (!usageMap[uid]) usageMap[uid] = {}
-    const leaveKey =
-      a.leave_type === 'Vacation Leave'
-        ? 'vacation'
-        : a.leave_type === 'Sick Leave'
-        ? 'sick'
-        : a.leave_type === 'Emergency Leave'
-        ? 'emergency'
-        : 'other'
+    const isVL = a.leave_type === 'VL' || a.leave_type === 'FL' || a.leave_type === 'Vacation Leave'
+    const isSL = a.leave_type === 'SL' || a.leave_type === 'Sick Leave'
+    const isEL = a.leave_type === 'CALAMITY' || a.leave_type === 'Emergency Leave'
+    const leaveKey = isVL ? 'vacation' : isSL ? 'sick' : isEL ? 'emergency' : 'other'
     usageMap[uid][leaveKey] = (usageMap[uid][leaveKey] ?? 0) + Number(a.total_days)
   }
 
