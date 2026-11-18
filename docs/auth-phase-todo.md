@@ -12,7 +12,7 @@ This document specifies the exact transition requirements for moving from the te
   - `public.profiles.id` is linked to `auth.users.id`.
   - Strict role isolation:
     - **STAFF**: Can only view and edit their own profile, submit leave applications for themselves, view their own leave records and balances. Cannot alter decisions or read full audit logs.
-    - **MHO_ADMIN**, **MHO_HEAD**, **LGU_HR**: Can view all employee records, review and update application decisions (`APPROVED` / `REJECTED`), file on behalf of personnel, view credit ledgers, manage system settings, and inspect system audit logs.
+    - **MHO_ADMIN**, **MHO_HEAD**: Can view all employee records, review and update application decisions (`APPROVED` / `REJECTED`), file on behalf of personnel (ADMIN), view credit ledgers, manage system settings, and inspect system audit logs (HEAD).
 
 ---
 
@@ -107,7 +107,7 @@ DROP POLICY IF EXISTS "DEV_TEMP_anon_system_settings_delete" ON public.system_se
 
 | Operation | Policy Name | Permitted Roles | SQL Definition |
 | :--- | :--- | :--- | :--- |
-| **SELECT** | `"Profiles view policy"` | Staff (self), Admin, Head, HR | `auth.uid() = id OR public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')` |
+| **SELECT** | `"Profiles view policy"` | Staff (self), Admin, Head | `auth.uid() = id OR public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD')` |
 | **INSERT** | `"Profiles insert policy"` | Admin, System Trigger | `public.get_current_user_role() = 'MHO_ADMIN'` |
 | **UPDATE** | `"Profiles update policy"` | Staff (own contact/profile), Admin | `(auth.uid() = id AND role = (SELECT role FROM public.profiles WHERE id = auth.uid())) OR public.get_current_user_role() = 'MHO_ADMIN'` |
 | **DELETE** | `"Profiles delete policy"` | Admin | `public.get_current_user_role() = 'MHO_ADMIN'` |
@@ -117,7 +117,7 @@ CREATE POLICY "Profiles view policy" ON public.profiles
 FOR SELECT TO authenticated
 USING (
     auth.uid() = id OR 
-    public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')
+    public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD')
 );
 
 CREATE POLICY "Profiles update policy" ON public.profiles
@@ -139,7 +139,7 @@ WITH CHECK (
 
 | Operation | Policy Name | Permitted Roles | SQL Definition |
 | :--- | :--- | :--- | :--- |
-| **SELECT** | `"Leave applications select policy"` | Staff (own records), Admin, Head, HR | `auth.uid() = user_id OR public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')` |
+| **SELECT** | `"Leave applications select policy"` | Staff (own records), Admin, Head | `auth.uid() = user_id OR public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD')` |
 | **INSERT** | `"Leave applications insert policy"` | Staff (for self), Admin (on-behalf) | `auth.uid() = user_id OR public.get_current_user_role() = 'MHO_ADMIN'` |
 | **UPDATE** | `"Leave applications decision policy"`| Admin, Head | `public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD')` |
 | **DELETE** | `"Leave applications delete policy"`| Admin | `public.get_current_user_role() = 'MHO_ADMIN'` |
@@ -149,7 +149,7 @@ CREATE POLICY "Leave applications select policy" ON public.leave_applications
 FOR SELECT TO authenticated
 USING (
     auth.uid() = user_id OR 
-    public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')
+    public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD')
 );
 
 CREATE POLICY "Leave applications insert policy" ON public.leave_applications
@@ -172,7 +172,7 @@ USING (
 
 | Operation | Policy Name | Permitted Roles | SQL Definition |
 | :--- | :--- | :--- | :--- |
-| **SELECT** | `"Leave balances select policy"` | Staff (own balance), Admin, Head, HR | `auth.uid() = user_id OR public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')` |
+| **SELECT** | `"Leave balances select policy"` | Staff (own balance), Admin, Head | `auth.uid() = user_id OR public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD')` |
 | **INSERT** | `"Leave balances insert policy"` | Admin | `public.get_current_user_role() = 'MHO_ADMIN'` |
 | **UPDATE** | `"Leave balances update policy"` | Admin (credit adjustments / approval workflow) | `public.get_current_user_role() = 'MHO_ADMIN'` |
 | **DELETE** | `"Leave balances delete policy"` | Admin | `public.get_current_user_role() = 'MHO_ADMIN'` |
@@ -182,7 +182,7 @@ CREATE POLICY "Leave balances select policy" ON public.leave_balances
 FOR SELECT TO authenticated
 USING (
     auth.uid() = user_id OR 
-    public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')
+    public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD')
 );
 
 CREATE POLICY "Leave balances update policy" ON public.leave_balances
@@ -198,7 +198,7 @@ USING (
 
 | Operation | Policy Name | Permitted Roles | SQL Definition |
 | :--- | :--- | :--- | :--- |
-| **SELECT** | `"Audit logs select policy"` | Admin, Head, HR | `public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')` |
+| **SELECT** | `"Audit logs select policy"` | Head only | `public.get_current_user_role() = 'MHO_HEAD'` |
 | **INSERT** | `"Audit logs insert policy"` | Authenticated or Triggers (`SECURITY DEFINER`) | `true` (Trigger-driven) |
 | **UPDATE** | *None* | Disallowed (Immutable audit log) | *No policy created* |
 | **DELETE** | *None* | Disallowed (Immutable audit log) | *No policy created* |
@@ -207,7 +207,7 @@ USING (
 CREATE POLICY "Audit logs select policy" ON public.audit_logs
 FOR SELECT TO authenticated
 USING (
-    public.get_current_user_role() IN ('MHO_ADMIN', 'MHO_HEAD', 'LGU_HR')
+    public.get_current_user_role() = 'MHO_HEAD'
 );
 ```
 
