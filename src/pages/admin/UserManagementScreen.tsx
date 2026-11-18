@@ -456,7 +456,6 @@ export const UserManagementScreen: React.FC = () => {
                               <option value="STAFF">STAFF</option>
                               <option value="MHO_ADMIN">MHO_ADMIN</option>
                               <option value="MHO_HEAD">MHO_HEAD</option>
-                              <option value="LGU_HR">LGU_HR</option>
                             </select>
                           </td>
 
@@ -528,7 +527,6 @@ export const UserManagementScreen: React.FC = () => {
                 <option value="STAFF">STAFF</option>
                 <option value="MHO_ADMIN">MHO_ADMIN</option>
                 <option value="MHO_HEAD">MHO_HEAD</option>
-                <option value="LGU_HR">LGU_HR</option>
               </select>
 
               <select
@@ -722,7 +720,6 @@ export const UserManagementScreen: React.FC = () => {
                     <option value="STAFF">STAFF</option>
                     <option value="MHO_ADMIN">MHO_ADMIN</option>
                     <option value="MHO_HEAD">MHO_HEAD</option>
-                    <option value="LGU_HR">LGU_HR</option>
                   </select>
                 </div>
 
