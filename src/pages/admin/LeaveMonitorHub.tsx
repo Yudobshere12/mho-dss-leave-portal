@@ -408,7 +408,6 @@ export const LeaveMonitorHub: React.FC = () => {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/75 text-slate-600 font-semibold text-2xs uppercase tracking-wider">
-                      <th className="py-3 px-4">Control #</th>
                       <th className="py-3 px-4">Applicant</th>
                       <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Period</th>
@@ -422,11 +421,6 @@ export const LeaveMonitorHub: React.FC = () => {
                     {filteredRecords.map((r) => {
                       return (
                         <tr key={r.id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="py-3 px-4">
-                            <span className="font-mono font-semibold text-teal-900 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded text-2xs">
-                              {r.control_number || `Leave-${r.id}`}
-                            </span>
-                          </td>
                           <td className="py-3 px-4">
                             <div className="font-semibold text-slate-900">{r.employee_name}</div>
                             {r.position_at_filing && (
