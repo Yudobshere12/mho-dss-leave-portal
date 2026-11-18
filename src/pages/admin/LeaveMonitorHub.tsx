@@ -7,6 +7,7 @@ import {
   RotateCcw,
   Eye,
   PlusCircle,
+  FileText,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useDevRole } from '../../context/DevRoleContext'
@@ -18,13 +19,16 @@ import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
+import { CSForm6DetailModal } from '../../components/CSForm6DetailModal'
 import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord, getLeaveTypeTheme } from '../../lib/leaveTypes'
+import { useSystemSettings } from '../../lib/systemSettings'
 import type { Database } from '../../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
 
 export const LeaveMonitorHub: React.FC = () => {
   const { currentUser, availableProfiles } = useDevRole()
+  const { settings } = useSystemSettings()
 
   const isStaff = currentUser.role === 'STAFF'
 
@@ -41,7 +45,7 @@ export const LeaveMonitorHub: React.FC = () => {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  // Details Modal
+  // CS Form 6 Details Modal
   const [viewDetailsApp, setViewDetailsApp] = useState<LeaveApplication | null>(null)
 
   const fetchRecords = async () => {
@@ -98,25 +102,36 @@ export const LeaveMonitorHub: React.FC = () => {
   // Filtered dataset
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
-      const searchMatch =
+      // Search term
+      const matchesSearch =
         !searchTerm.trim() ||
         (r.employee_name && r.employee_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (r.control_number && r.control_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        r.leave_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (r.reason && r.reason.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        String(r.id).includes(searchTerm)
+        (r.other_leave_type && r.other_leave_type.toLowerCase().includes(searchTerm.toLowerCase()))
 
-      const statusMatch = statusFilter === 'ALL' || r.status === statusFilter
-      const categoryMatch =
-        categoryFilter === 'ALL' ||
-        r.leave_type === categoryFilter ||
-        getLeaveTypeTheme(r.leave_type).code === categoryFilter
-      const employeeMatch =
-        employeeFilter === 'ALL' ||
-        (employeeFilter === 'WALK_IN' ? r.user_id === null : r.user_id === employeeFilter)
+      // Status
+      const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter
 
-      const dateFromMatch = !dateFrom || r.start_date >= dateFrom
-      const dateToMatch = !dateTo || r.start_date <= dateTo
+      // Category
+      const matchesCategory = categoryFilter === 'ALL' || r.leave_type === categoryFilter
 
-      return searchMatch && statusMatch && categoryMatch && employeeMatch && dateFromMatch && dateToMatch
+      // Employee
+      const matchesEmployee = employeeFilter === 'ALL' || r.user_id === employeeFilter
+
+      // Date range
+      const matchesDateFrom = !dateFrom || r.start_date >= dateFrom
+      const matchesDateTo = !dateTo || r.end_date <= dateTo
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesCategory &&
+        matchesEmployee &&
+        matchesDateFrom &&
+        matchesDateTo
+      )
     })
   }, [records, searchTerm, statusFilter, categoryFilter, employeeFilter, dateFrom, dateTo])
 
@@ -132,25 +147,28 @@ export const LeaveMonitorHub: React.FC = () => {
   const handleExportCsv = () => {
     if (filteredRecords.length === 0) return
     exportToCsv(`mho_leave_applications_${new Date().toISOString().slice(0, 10)}`, filteredRecords, [
+      { key: 'control_number', label: 'Control Number' },
       { key: 'id', label: 'ID' },
       { key: 'employee_name', label: 'Employee Name' },
+      { key: 'position_at_filing', label: 'Position' },
       { key: 'leave_type', label: 'Leave Category' },
       { key: 'start_date', label: 'Start Date' },
       { key: 'end_date', label: 'End Date' },
-      { key: 'total_days', label: 'Working Days' },
+      { key: 'working_days', label: 'Working Days' },
+      { key: 'commutation', label: 'Commutation' },
       { key: 'status', label: 'Status' },
       { key: 'dss_recommendation', label: 'DSS Recommendation' },
       { key: 'admin_remarks', label: 'Admin Remarks' },
-      { key: 'created_at', label: 'Date Filed' },
+      { key: 'date_of_filing', label: 'Date Filed' },
     ])
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Leave Monitor"
+        title="Leave Monitor Hub"
         action={
-          <>
+          <div className="flex items-center gap-2">
             <button
               onClick={handleExportCsv}
               disabled={filteredRecords.length === 0}
@@ -164,82 +182,66 @@ export const LeaveMonitorHub: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 transition-colors"
             >
               <PlusCircle className="h-3.5 w-3.5" />
-              File Leave
+              New Application
             </Link>
-          </>
+          </div>
         }
       />
 
       {/* Filter Toolbar */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-700 border-b border-slate-100 pb-2">
-          <span className="flex items-center gap-1.5 text-teal-800 uppercase tracking-wider text-2xs">
-            <Filter className="h-3.5 w-3.5 text-teal-700" />
-            Filter Criteria
-          </span>
-          <button
-            onClick={handleResetFilters}
-            className="flex items-center gap-1 text-slate-400 hover:text-teal-700 text-2xs font-semibold transition-colors"
-          >
-            <RotateCcw className="h-3 w-3" /> Reset
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
-          <div className="lg:col-span-2">
-            <label className="block text-2xs font-semibold text-slate-500 mb-1">Search</label>
-            <div className="relative">
-              <Search className="h-3.5 w-3.5 absolute left-3 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Name, remark, or ID..."
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
-              />
-            </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* Search */}
+          <div className="relative lg:col-span-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search employee, control #, reason..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:bg-white focus:outline-hidden transition-all"
+            />
           </div>
 
+          {/* Status Filter */}
           <div>
-            <label className="block text-2xs font-semibold text-slate-500 mb-1">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden transition-all"
             >
               <option value="ALL">All Statuses</option>
-              <option value="PENDING">PENDING</option>
-              <option value="APPROVED">APPROVED</option>
-              <option value="REJECTED">REJECTED</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="REJECTED">Rejected</option>
             </select>
           </div>
 
+          {/* Category Filter */}
           <div>
-            <label className="block text-2xs font-semibold text-slate-500 mb-1">Category</label>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden transition-all"
             >
               <option value="ALL">All Categories</option>
-              {leaveTypes.map((lt) => (
-                <option key={lt.code} value={lt.code}>
-                  [{lt.code}] {lt.name}
+              {leaveTypes.map((t) => (
+                <option key={t.code} value={t.code}>
+                  {t.code} - {t.name}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Employee Filter (Admins only) */}
           {!isStaff && (
             <div>
-              <label className="block text-2xs font-semibold text-slate-500 mb-1">Employee</label>
               <select
                 value={employeeFilter}
                 onChange={(e) => setEmployeeFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden transition-all"
               >
-                <option value="ALL">All Personnel</option>
-                <option value="WALK_IN">Walk-in Only</option>
+                <option value="ALL">All Staff</option>
                 {availableProfiles.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.full_name}
@@ -249,174 +251,154 @@ export const LeaveMonitorHub: React.FC = () => {
             </div>
           )}
 
-          <div>
-            <label className="block text-2xs font-semibold text-slate-500 mb-1">From Date</label>
+          {/* Reset Filters */}
+          <div className="flex items-center">
+            <button
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {/* Date Sub-Row */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs text-slate-500">
+          <span className="font-medium text-slate-700">Date Range:</span>
+          <div className="flex items-center gap-1.5">
+            <span>From:</span>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-2 py-1 text-2xs text-slate-900 focus:bg-white focus:outline-hidden"
             />
           </div>
+          <div className="flex items-center gap-1.5">
+            <span>To:</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-slate-50 px-2 py-1 text-2xs text-slate-900 focus:bg-white focus:outline-hidden"
+            />
+          </div>
+          <span className="ml-auto text-slate-400 font-medium">
+            Showing {filteredRecords.length} of {records.length} applications
+          </span>
         </div>
       </div>
 
-      {/* Main Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-        <div className="p-3.5 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4 text-teal-700" />
-            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Applications Registry ({filteredRecords.length})
-            </h2>
-          </div>
-          <span className="text-2xs text-slate-400">
-            {isStaff ? 'Personal filings ledger' : 'Complete office records'}
-          </span>
-        </div>
-
+      {/* Main Table / State View */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-soft overflow-hidden">
         {isLoading ? (
-          <LoadingState message="Loading leave applications..." />
+          <div className="p-8">
+            <LoadingState message="Loading leave applications directory..." />
+          </div>
         ) : errorMessage ? (
-          <ErrorState message={errorMessage} onRetry={fetchRecords} />
+          <div className="p-8">
+            <ErrorState message={errorMessage} onRetry={fetchRecords} />
+          </div>
         ) : filteredRecords.length === 0 ? (
-          <div className="p-6">
+          <div className="p-8">
             <EmptyState
-              title="No applications found"
-              description="No applications match the current filter criteria."
+              title="No Applications Found"
+              description="No leave records matched your applied search criteria."
             />
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200 text-2xs">
-                <tr>
-                  <th className="px-4 py-2.5">Applicant</th>
-                  <th className="px-4 py-2.5">Category</th>
-                  <th className="px-4 py-2.5">Date Range</th>
-                  <th className="px-4 py-2.5 text-center">Duration</th>
-                  <th className="px-4 py-2.5">Status</th>
-                  <th className="px-4 py-2.5">DSS Advisory</th>
-                  <th className="px-4 py-2.5 text-right">Actions</th>
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/75 text-slate-600 font-semibold text-2xs uppercase tracking-wider">
+                  <th className="py-3 px-4">Control #</th>
+                  <th className="py-3 px-4">Applicant</th>
+                  <th className="py-3 px-4">Category</th>
+                  <th className="py-3 px-4">Period</th>
+                  <th className="py-3 px-4">Working Days</th>
+                  <th className="py-3 px-4">DSS Status</th>
+                  <th className="py-3 px-4">Final Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredRecords.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-2.5">
-                      <div className="font-semibold text-slate-900">
-                        {r.employee_name || 'Walk-in Personnel'}
-                      </div>
-                      <div className="text-2xs text-slate-400 font-mono">#APP-{r.id}</div>
-                    </td>
-                    <td className="px-4 py-2.5 text-slate-600">
-                      <LeaveTypeBadge codeOrName={r.leave_type} />
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-2xs text-slate-600">
-                      {r.start_date} to {r.end_date}
-                    </td>
-                    <td className="px-4 py-2.5 text-center font-bold text-teal-800 text-2xs">
-                      {r.total_days} d
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-2xs font-bold ${
-                          r.status === 'APPROVED'
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            : r.status === 'REJECTED'
-                            ? 'bg-red-50 text-red-800 border border-red-200'
-                            : 'bg-amber-50 text-amber-800 border border-amber-200'
-                        }`}
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <DssBadge recommendation={r.dss_recommendation} />
-                    </td>
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => setViewDetailsApp(r)}
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2.5 py-1 text-2xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                        title="View Details"
-                      >
-                        <Eye className="h-3 w-3" /> Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-slate-100">
+                {filteredRecords.map((r) => {
+                  const theme = getLeaveTypeTheme(r.leave_type)
+                  return (
+                    <tr key={r.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4">
+                        <span className="font-mono font-semibold text-teal-900 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded text-2xs">
+                          {r.control_number || `Leave-${r.id}`}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">{r.employee_name}</div>
+                        {r.position_at_filing && (
+                          <div className="text-3xs text-slate-500">{r.position_at_filing}</div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <LeaveTypeBadge codeOrName={r.leave_type} />
+                        {r.other_leave_type && (
+                          <span className="text-3xs text-slate-500 block mt-0.5 truncate max-w-[120px]">
+                            {r.other_leave_type}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">
+                        <div>
+                          {r.start_date} &rarr; {r.end_date}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        {r.working_days ?? r.total_days} days
+                      </td>
+                      <td className="py-3 px-4">
+                        <DssBadge recommendation={r.dss_recommendation} />
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                            r.status === 'APPROVED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : r.status === 'REJECTED'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => setViewDetailsApp(r)}
+                          className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-2xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+                        >
+                          <Eye className="h-3 w-3" />
+                          View CS Form 6
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* View Details Modal */}
-      {viewDetailsApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h3 className="text-sm font-bold text-slate-900">
-                Application #{viewDetailsApp.id} Details
-              </h3>
-              <DssBadge recommendation={viewDetailsApp.dss_recommendation} />
-            </div>
-
-            <div className="text-xs space-y-2 text-slate-700">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="font-semibold text-slate-900">Employee:</span>{' '}
-                  {viewDetailsApp.employee_name}
-                </div>
-                <div>
-                  <span className="font-semibold text-slate-900">Category:</span>{' '}
-                  <LeaveTypeBadge codeOrName={viewDetailsApp.leave_type} />
-                </div>
-                <div>
-                  <span className="font-semibold text-slate-900">Period:</span>{' '}
-                  {viewDetailsApp.start_date} to {viewDetailsApp.end_date}
-                </div>
-                <div>
-                  <span className="font-semibold text-slate-900">Duration:</span>{' '}
-                  {viewDetailsApp.total_days} working days
-                </div>
-              </div>
-
-              {viewDetailsApp.reason && (
-                <div className="rounded-lg bg-slate-50 p-2 border border-slate-200">
-                  <span className="font-bold block text-slate-800 text-2xs mb-0.5">Applicant Reason:</span>
-                  <span className="italic">{viewDetailsApp.reason}</span>
-                </div>
-              )}
-
-              {viewDetailsApp.dss_recommendation && (
-                <div className="rounded-lg bg-slate-50 p-2 border border-slate-200">
-                  <span className="font-bold block text-slate-800 text-2xs mb-0.5">DSS Advisory Record:</span>
-                  <span>{viewDetailsApp.dss_recommendation}</span>
-                </div>
-              )}
-
-              {viewDetailsApp.admin_remarks && (
-                <div className="rounded-lg bg-teal-50 p-2 border border-teal-200 text-teal-950">
-                  <span className="font-bold block text-2xs mb-0.5">Decision Review Remarks:</span>
-                  <span>{viewDetailsApp.admin_remarks}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-slate-100">
-              <button
-                onClick={() => setViewDetailsApp(null)}
-                className="rounded-full bg-teal-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-teal-800 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* CS Form 6 Details Modal */}
+      <CSForm6DetailModal
+        application={viewDetailsApp}
+        isOpen={Boolean(viewDetailsApp)}
+        onClose={() => setViewDetailsApp(null)}
+        officeName={settings.office_name}
+        hrmoName={settings.hrmo_name}
+        hrmoTitle={settings.hrmo_title}
+        mhoName={settings.mho_name}
+        mhoTitle={settings.mho_title}
+      />
     </div>
   )
 }
-
-export default LeaveMonitorHub

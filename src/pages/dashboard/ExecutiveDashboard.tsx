@@ -163,15 +163,18 @@ export const ExecutiveDashboard: React.FC = () => {
       `mho_executive_summary_${new Date().toISOString().slice(0, 10)}`,
       applications,
       [
+        { key: 'control_number', label: 'Control Number' },
         { key: 'id', label: 'ID' },
         { key: 'employee_name', label: 'Employee Name' },
+        { key: 'position_at_filing', label: 'Position' },
         { key: 'leave_type', label: 'Category' },
         { key: 'start_date', label: 'Start Date' },
         { key: 'end_date', label: 'End Date' },
-        { key: 'total_days', label: 'Working Days' },
+        { key: 'working_days', label: 'Working Days' },
+        { key: 'commutation', label: 'Commutation' },
         { key: 'status', label: 'Status' },
         { key: 'dss_recommendation', label: 'DSS Recommendation' },
-        { key: 'created_at', label: 'Date Filed' },
+        { key: 'date_of_filing', label: 'Date Filed' },
       ]
     )
   }
