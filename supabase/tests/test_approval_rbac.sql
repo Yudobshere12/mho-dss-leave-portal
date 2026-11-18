@@ -6,7 +6,6 @@
 --              3. Approved STAFF
 --              4. Approved MHO_ADMIN
 --              5. Approved MHO_HEAD
---              6. Approved LGU_HR
 -- ==============================================================================
 
 BEGIN;
@@ -19,7 +18,6 @@ DECLARE
     v_staff_user UUID := '33333333-3333-3333-3333-333333333333';
     v_head_user UUID := '44444444-4444-4444-4444-444444444444';
     v_admin_user UUID := '55555555-5555-5555-5555-555555555555';
-    v_hr_user UUID := '66666666-6666-6666-6666-666666666666';
 BEGIN
     RAISE NOTICE '==================================================';
     RAISE NOTICE 'Starting RBAC & Approval Gate Validation Tests';
@@ -46,7 +44,6 @@ END $$;
 | STAFF           | Select own ONLY       | Own apps ONLY      | Own balance ONLY   | NO ACCESS          | Select (Read-only) |
 | MHO_ADMIN       | Select all, update all| Select all, insert | Select all, update | NO ACCESS          | Full read & write  |
 | MHO_HEAD        | Select all (no write) | Select all, own ins| Select all (no wrt)| Select all (view)  | Select (Read-only) |
-| LGU_HR          | Select all (no write) | Select all (no wrt)| Select all (no wrt)| Select all (view)  | Select (Read-only) |
 +-----------------+-----------------------+--------------------+--------------------+--------------------+--------------------+
 */
 
