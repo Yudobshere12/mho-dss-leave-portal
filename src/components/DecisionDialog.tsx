@@ -6,6 +6,7 @@ import {
   Loader2,
   Calendar,
 } from 'lucide-react'
+import { LeaveTypeBadge } from './LeaveTypeBadge'
 import type { Database } from '../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
@@ -64,8 +65,9 @@ export const DecisionDialog: React.FC<DecisionDialogProps> = ({
         {/* Application Summary Box */}
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="font-semibold text-slate-900">Category:</span> {application.leave_type}
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-slate-900">Category:</span>{' '}
+              <LeaveTypeBadge codeOrName={application.leave_type} />
             </div>
             <div>
               <span className="font-semibold text-slate-900">Duration:</span>{' '}
