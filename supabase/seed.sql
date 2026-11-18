@@ -14,9 +14,6 @@ VALUES
     -- 1 MHO Admin
     ('a0000000-0000-0000-0000-000000000002', 'Roberto Gomez', 'admin@mho.gov.ph', 'MHO_ADMIN', 'Administrative Officer V', 15.00, 15.00, 5.00, true),
     
-    -- 1 LGU HR
-    ('a0000000-0000-0000-0000-000000000003', 'Elena Rostata', 'hr@mho.gov.ph', 'LGU_HR', 'Human Resource Management Officer II', 15.00, 15.00, 5.00, true),
-    
     -- 3 Staff Members
     ('a0000000-0000-0000-0000-000000000004', 'Juan dela Cruz', 'staff1@mho.gov.ph', 'STAFF', 'Staff Nurse II', 12.00, 15.00, 5.00, true),
     ('a0000000-0000-0000-0000-000000000005', 'Maria Santos', 'staff2@mho.gov.ph', 'STAFF', 'Rural Health Midwife I', 15.00, 13.00, 5.00, true),
@@ -28,7 +25,6 @@ INSERT INTO public.leave_balances (user_id, vacation_credits, sick_credits, emer
 VALUES
     ('a0000000-0000-0000-0000-000000000001', 15.00, 15.00, 5.00),
     ('a0000000-0000-0000-0000-000000000002', 15.00, 15.00, 5.00),
-    ('a0000000-0000-0000-0000-000000000003', 15.00, 15.00, 5.00),
     ('a0000000-0000-0000-0000-000000000004', 12.00, 15.00, 5.00),
     ('a0000000-0000-0000-0000-000000000005', 15.00, 13.00, 5.00),
     ('a0000000-0000-0000-0000-000000000006', 15.00, 15.00, 5.00)
