@@ -64,19 +64,19 @@ export const CSForm6DetailModal: React.FC<CSForm6DetailModalProps> = ({
     : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-3xl my-6 rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-3xl my-auto sm:my-6 rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden max-h-[92dvh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
         {/* Form 6 Top Header Banner */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <FileText className="h-5 w-5 text-teal-400" />
+            <FileText className="h-5 w-5 text-teal-400 shrink-0" />
             <div>
               <span className="text-2xs uppercase tracking-widest text-slate-400 font-semibold block">
                 Civil Service Form No. 6 (Revised 2020)
               </span>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2 flex-wrap">
                 <span>Application for Leave</span>
-                <span className="text-xs font-mono font-medium text-teal-300 bg-teal-950/60 border border-teal-800/80 px-2 py-0.5 rounded-md">
+                <span className="text-3xs sm:text-xs font-mono font-medium text-teal-300 bg-teal-950/60 border border-teal-800/80 px-2 py-0.5 rounded-md">
                   {application.control_number || `Leave-${application.id}`}
                 </span>
               </h2>
@@ -85,14 +85,14 @@ export const CSForm6DetailModal: React.FC<CSForm6DetailModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded-lg p-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Form Body - CS Form 6 Layout */}
-        <div className="p-6 max-h-[80vh] overflow-y-auto space-y-5 text-xs text-slate-800">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-xs text-slate-800 flex-1">
           {/* Header Metadata Block */}
           <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
