@@ -15,6 +15,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
 import type { Database } from '../../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
@@ -185,9 +186,12 @@ export const ApprovalQueueScreen: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-700">
-                  <div>
-                    <span className="font-semibold text-slate-900">Type:</span> {app.leave_type}
-                    {app.other_leave_type && ` (${app.other_leave_type})`}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-900">Type:</span>{' '}
+                    <LeaveTypeBadge codeOrName={app.leave_type} />
+                    {app.other_leave_type && (
+                      <span className="text-2xs text-slate-500 truncate">({app.other_leave_type})</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5 text-slate-400" />
