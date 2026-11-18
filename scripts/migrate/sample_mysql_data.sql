@@ -8,7 +8,7 @@
 INSERT INTO users (id, username, email, password, full_name, role, position, vacation_credits, sick_credits, emergency_credits, is_active, created_at) VALUES
 (1, 'msalcedo', 'head@mho.gov.ph', '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789dummyhashhead', 'Dr. Maria Clara Salcedo', 'MHO_HEAD', 'Municipal Health Officer', 15.00, 15.00, 5.00, 1, '2026-01-10 08:00:00'),
 (2, 'rgomez', 'admin@mho.gov.ph', '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789dummyhashadmin', 'Roberto Gomez', 'MHO_ADMIN', 'Administrative Officer V', 15.00, 15.00, 5.00, 1, '2026-01-12 08:30:00'),
-(3, 'erostata', 'hr@mho.gov.ph', '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789dummyhashhr', 'Elena Rostata', 'LGU_HR', 'Human Resource Management Officer II', 15.00, 15.00, 5.00, 1, '2026-01-15 09:00:00'),
+(3, 'erostata', 'hr@mho.gov.ph', '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789dummyhashhr', 'Elena Rostata', 'STAFF', 'Administrative Assistant II', 15.00, 15.00, 5.00, 1, '2026-01-15 09:00:00'),
 (4, 'jdelacruz', 'staff1@mho.gov.ph', '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789dummyhashstaff1', 'Juan dela Cruz', 'STAFF', 'Staff Nurse II', 12.00, 15.00, 5.00, 1, '2026-02-01 08:00:00'),
 (5, 'msantos', 'staff2@mho.gov.ph', '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789dummyhashstaff2', 'Maria Santos', 'STAFF', 'Rural Health Midwife I', 15.00, 13.00, 5.00, 1, '2026-02-05 08:15:00'),
 (6, 'aluna', 'staff3@mho.gov.ph', '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789dummyhashstaff3', 'Antonio Luna', 'STAFF', 'Medical Technologist I', 15.00, 15.00, 5.00, 1, '2026-02-10 08:30:00');
