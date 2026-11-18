@@ -18,7 +18,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
+      <div className="min-h-[100dvh] w-full flex items-center justify-center bg-slate-50">
         <LoadingState message="Checking authentication & access permissions..." />
       </div>
     )

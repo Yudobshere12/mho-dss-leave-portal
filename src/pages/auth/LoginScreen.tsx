@@ -104,7 +104,7 @@ export const LoginScreen: React.FC = () => {
   const anyLoading = isSubmitting || isGoogleSubmitting
 
   return (
-    <div className="relative min-h-screen w-full bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 overflow-hidden">
+    <div className="relative min-h-[100dvh] w-full bg-slate-950 flex flex-col justify-center items-center p-3 sm:p-6 lg:p-8 overflow-x-hidden">
       {/* Animated Glowing / Floating Background Orbs */}
       <motion.div
         animate={{
@@ -162,8 +162,8 @@ export const LoginScreen: React.FC = () => {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className="relative z-10 w-full max-w-[1100px] rounded-3xl bg-white shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2"
       >
-        {/* Left Half: Visual Image Panel */}
-        <div className="relative min-h-[420px] md:min-h-[560px] overflow-hidden flex flex-col justify-start p-6 sm:p-10 text-white">
+        {/* Left Half: Visual Image Panel (Hidden on mobile below md) */}
+        <div className="relative min-h-[420px] md:min-h-[560px] overflow-hidden hidden md:flex flex-col justify-start p-6 sm:p-10 text-white">
           <div className="absolute inset-0 overflow-hidden">
             <img
               src={visualBesideLogin}
@@ -207,8 +207,17 @@ export const LoginScreen: React.FC = () => {
         </div>
 
         {/* Right Half: Sign In / Sign Up Form */}
-        <div className="p-8 sm:p-12 flex flex-col justify-between bg-white">
+        <div className="p-6 sm:p-8 md:p-12 flex flex-col justify-between bg-white w-full">
           <div>
+            {/* Mobile Header Branding (visible only on mobile below md) */}
+            <div className="flex md:hidden items-center gap-2.5 mb-6 pb-4 border-b border-slate-100">
+              <img src={mhoLogoPng} alt="MHO Logo" className="h-9 w-auto object-contain" />
+              <div>
+                <h1 className="text-sm font-bold text-slate-900 leading-tight">MHO Leave DSS Portal</h1>
+                <p className="text-3xs text-slate-500">Municipal Health Office</p>
+              </div>
+            </div>
+
             {/* Header */}
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">

@@ -9,7 +9,7 @@ interface PlaceholderCardProps {
 
 export const PlaceholderCard: React.FC<PlaceholderCardProps> = ({ title, description }) => {
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-teal-50/70 via-slate-50 to-white flex flex-col justify-center items-center p-4">
+    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-teal-50/70 via-slate-50 to-white flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-soft border border-slate-100 p-8 text-center space-y-5">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-50 text-teal-700 border border-teal-100">
           <Clock className="h-7 w-7" />
