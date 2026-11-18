@@ -53,7 +53,7 @@ export function App() {
                   </ProtectedRoute>
                 }
               >
-                {/* /dashboard - STAFF, MHO_ADMIN, MHO_HEAD, LGU_HR */}
+                {/* /dashboard - STAFF, MHO_ADMIN, MHO_HEAD */}
                 <Route
                   path="/dashboard"
                   element={
@@ -91,7 +91,7 @@ export function App() {
                   }
                 />
 
-                {/* Leave Monitor - MHO_ADMIN, MHO_HEAD, LGU_HR */}
+                {/* Leave Monitor - MHO_ADMIN, MHO_HEAD */}
                 <Route
                   path="/admin/leaves"
                   element={
@@ -101,7 +101,7 @@ export function App() {
                   }
                 />
 
-                {/* Personnel Directory - MHO_ADMIN, MHO_HEAD, LGU_HR */}
+                {/* Personnel Directory - MHO_ADMIN, MHO_HEAD */}
                 <Route
                   path="/admin/personnel"
                   element={
@@ -121,7 +121,7 @@ export function App() {
                   }
                 />
 
-                {/* Audit Logs - MHO_HEAD, LGU_HR only */}
+                {/* Audit Logs - MHO_HEAD only */}
                 <Route
                   path="/reports/audit-logs"
                   element={

@@ -15,8 +15,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         return 'bg-teal-50 text-teal-800 border-teal-200'
       case 'MHO_ADMIN':
         return 'bg-teal-100 text-teal-900 border-teal-300'
-      case 'LGU_HR':
-        return 'bg-emerald-50 text-emerald-800 border-emerald-200'
       default:
         return 'bg-slate-100 text-slate-800 border-slate-200'
     }

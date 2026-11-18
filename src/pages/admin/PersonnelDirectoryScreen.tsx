@@ -118,7 +118,6 @@ const CreditCell: React.FC<{ credits: number; used: number; color: string }> = (
 const ROLE_COLORS: Record<string, string> = {
   MHO_HEAD: 'bg-teal-50 text-teal-800 border border-teal-200',
   MHO_ADMIN: 'bg-teal-100 text-teal-900 border border-teal-300',
-  LGU_HR: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
   STAFF: 'bg-slate-100 text-slate-700 border border-slate-200',
 }
 
@@ -229,7 +228,6 @@ export const PersonnelDirectoryScreen: React.FC = () => {
           <option value="all">All Roles</option>
           <option value="MHO_HEAD">MHO Head</option>
           <option value="MHO_ADMIN">MHO Admin</option>
-          <option value="LGU_HR">LGU HR</option>
           <option value="STAFF">Staff</option>
         </select>
         <select

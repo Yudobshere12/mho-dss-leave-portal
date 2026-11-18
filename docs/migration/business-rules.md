@@ -145,8 +145,8 @@ The DSS engine provides rule-based recommendations on leave requests by evaluati
 ### Rule 5.1: Session Authentication Gate (`checkAdminAccess` / Role Checks)
 - **Session Check**: Unauthenticated requests to administrative pages redirect to `/mho_portal/index.php?error=Unauthorized+access`.
 - **Role Restrictions**:
-  - `approval_queue.php`: Allowed for `MHO_ADMIN`, `MHO_HEAD`, `LGU_HR`.
-  - `audit_logs.php`: Allowed for `MHO_ADMIN`, `MHO_HEAD`, `LGU_HR`.
+  - `approval_queue.php`: Allowed for `MHO_ADMIN`, `MHO_HEAD`.
+  - `audit_logs.php`: Allowed for `MHO_HEAD`.
   - `users.php` (Management): Strictly restricted to `MHO_ADMIN`.
 - **Citations**:
   - [mho_portal/config/db.php#L32-L38](file:///C:/commision/mho_dss_portal/mho_portal/config/db.php#L32-L38)

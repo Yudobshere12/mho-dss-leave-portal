@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type UserRole = 'STAFF' | 'MHO_ADMIN' | 'MHO_HEAD' | 'LGU_HR'
+export type UserRole = 'STAFF' | 'MHO_ADMIN' | 'MHO_HEAD'
 export type UserStatus = 'pending' | 'approved' | 'rejected'
 
 export type LeaveType =

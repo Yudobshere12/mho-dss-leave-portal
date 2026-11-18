@@ -66,18 +66,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       'dashboard:quick_actions',
     ],
   },
-  LGU_HR: {
-    routes: [
-      '/dashboard',
-      '/admin/leaves',
-      '/admin/personnel',
-      '/reports/audit-logs',
-    ],
-    actions: [
-      'leave:export',
-      'dashboard:view_aggregate',
-    ],
-  },
 }
 
 export function isRouteAllowed(role: UserRole | null | undefined, route: string): boolean {
