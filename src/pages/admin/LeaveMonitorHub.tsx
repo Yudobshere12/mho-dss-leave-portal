@@ -17,6 +17,8 @@ import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
+import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord, getLeaveTypeTheme } from '../../lib/leaveTypes'
 import type { Database } from '../../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
@@ -27,6 +29,7 @@ export const LeaveMonitorHub: React.FC = () => {
   const isStaff = currentUser.role === 'STAFF'
 
   const [records, setRecords] = useState<LeaveApplication[]>([])
+  const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>(FALLBACK_LEAVE_TYPES)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -66,6 +69,29 @@ export const LeaveMonitorHub: React.FC = () => {
   }
 
   useEffect(() => {
+    let isMounted = true
+    async function loadTypes() {
+      try {
+        const { data, error } = await supabase
+          .from('leave_types')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+
+        if (!error && data && data.length > 0 && isMounted) {
+          setLeaveTypes(data as LeaveTypeRecord[])
+        }
+      } catch (e) {
+        console.warn('Using fallback leave types in monitor:', e)
+      }
+    }
+    loadTypes()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
     fetchRecords()
   }, [currentUser.id, currentUser.role])
 
@@ -79,7 +105,10 @@ export const LeaveMonitorHub: React.FC = () => {
         String(r.id).includes(searchTerm)
 
       const statusMatch = statusFilter === 'ALL' || r.status === statusFilter
-      const categoryMatch = categoryFilter === 'ALL' || r.leave_type === categoryFilter
+      const categoryMatch =
+        categoryFilter === 'ALL' ||
+        r.leave_type === categoryFilter ||
+        getLeaveTypeTheme(r.leave_type).code === categoryFilter
       const employeeMatch =
         employeeFilter === 'ALL' ||
         (employeeFilter === 'WALK_IN' ? r.user_id === null : r.user_id === employeeFilter)
@@ -193,13 +222,11 @@ export const LeaveMonitorHub: React.FC = () => {
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
             >
               <option value="ALL">All Categories</option>
-              <option value="Vacation Leave">Vacation Leave</option>
-              <option value="Sick Leave">Sick Leave</option>
-              <option value="Emergency Leave">Emergency Leave</option>
-              <option value="Maternity Leave">Maternity Leave</option>
-              <option value="Paternity Leave">Paternity Leave</option>
-              <option value="Special Privilege Leave">Special Privilege Leave</option>
-              <option value="Other">Other</option>
+              {leaveTypes.map((lt) => (
+                <option key={lt.code} value={lt.code}>
+                  [{lt.code}] {lt.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -283,9 +310,7 @@ export const LeaveMonitorHub: React.FC = () => {
                       <div className="text-2xs text-slate-400 font-mono">#APP-{r.id}</div>
                     </td>
                     <td className="px-4 py-2.5 text-slate-600">
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-2xs font-medium">
-                        {r.leave_type}
-                      </span>
+                      <LeaveTypeBadge codeOrName={r.leave_type} />
                     </td>
                     <td className="px-4 py-2.5 font-mono text-2xs text-slate-600">
                       {r.start_date} to {r.end_date}
@@ -345,7 +370,7 @@ export const LeaveMonitorHub: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-semibold text-slate-900">Category:</span>{' '}
-                  {viewDetailsApp.leave_type}
+                  <LeaveTypeBadge codeOrName={viewDetailsApp.leave_type} />
                 </div>
                 <div>
                   <span className="font-semibold text-slate-900">Period:</span>{' '}

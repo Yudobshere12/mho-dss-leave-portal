@@ -45,22 +45,22 @@ def normalize_leave_type(lt_str: str) -> str:
     """Normalizes leave type strings to match Postgres leave_type enum."""
     val = lt_str.strip("'\" ")
     mapping = {
-        'Vacation': 'Vacation Leave',
-        'Vacation Leave': 'Vacation Leave',
-        'Sick': 'Sick Leave',
-        'Sick Leave': 'Sick Leave',
-        'Emergency': 'Emergency Leave',
-        'Emergency Leave': 'Emergency Leave',
-        'Maternity': 'Maternity Leave',
-        'Maternity Leave': 'Maternity Leave',
-        'Paternity': 'Paternity Leave',
-        'Paternity Leave': 'Paternity Leave',
-        'Special Privilege': 'Special Privilege Leave',
-        'Special Privilege Leave': 'Special Privilege Leave',
-        'Other': 'Other',
-        'Others': 'Other'
+        'Vacation': 'VL',
+        'VL': 'VL',
+        'Sick': 'SL',
+        'SL': 'SL',
+        'Emergency': 'CALAMITY',
+        'CALAMITY': 'CALAMITY',
+        'Maternity': 'ML',
+        'ML': 'ML',
+        'Paternity': 'PL',
+        'PL': 'PL',
+        'Special Privilege': 'SPL',
+        'SPL': 'SPL',
+        'OTHER': 'OTHER',
+        'Others': 'OTHER'
     }
-    return mapping.get(val, 'Other')
+    return mapping.get(val, 'OTHER')
 
 def split_sql_rows(values_block: str):
     """

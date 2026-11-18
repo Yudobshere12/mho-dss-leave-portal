@@ -22,6 +22,8 @@ import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
+import { getLeaveTypeTheme } from '../../lib/leaveTypes'
 import type { Database } from '../../types/database.types'
 
 type LeaveApplication = Database['public']['Tables']['leave_applications']['Row']
@@ -173,15 +175,6 @@ export const ExecutiveDashboard: React.FC = () => {
       ]
     )
   }
-
-  const categoryClasses = [
-    { dot: 'bg-teal-700', bar: 'bg-teal-700' },
-    { dot: 'bg-teal-600', bar: 'bg-teal-600' },
-    { dot: 'bg-teal-500', bar: 'bg-teal-500' },
-    { dot: 'bg-emerald-600', bar: 'bg-emerald-600' },
-    { dot: 'bg-amber-600', bar: 'bg-amber-600' },
-    { dot: 'bg-slate-500', bar: 'bg-slate-500' },
-  ]
 
   return (
     <div className="space-y-6">
@@ -389,15 +382,15 @@ export const ExecutiveDashboard: React.FC = () => {
                 <EmptyState title="No leave applications yet" description="Applications filed will appear here." />
               ) : (
                 <div className="space-y-3 pt-1">
-                  {stats.categories.map((cat, idx) => {
+                  {stats.categories.map((cat) => {
                     const percentage = Math.round((cat.count / stats.total) * 100)
-                    const themeClass = categoryClasses[idx % categoryClasses.length]
+                    const theme = getLeaveTypeTheme(cat.name)
                     return (
                       <div key={cat.name} className="space-y-1 text-xs">
                         <div className="flex justify-between items-center text-slate-700">
                           <span className="font-semibold flex items-center gap-2 text-2xs">
-                            <span className={`h-2 w-2 rounded-full ${themeClass.dot}`} />
-                            {cat.name}
+                            <span className={`h-2 w-2 rounded-full ${theme.chartDot}`} />
+                            <span className="font-bold text-slate-900">[{theme.code}]</span> {theme.name}
                           </span>
                           <span className="font-bold text-2xs">
                             {cat.count} ({percentage}%)
@@ -405,7 +398,7 @@ export const ExecutiveDashboard: React.FC = () => {
                         </div>
                         <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${themeClass.bar}`}
+                            className={`h-full rounded-full ${theme.chartBar}`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
@@ -446,8 +439,9 @@ export const ExecutiveDashboard: React.FC = () => {
                           {app.total_days} d
                         </span>
                       </div>
-                      <div className="text-slate-500 text-2xs">
-                        {app.leave_type} &bull; {app.start_date} to {app.end_date}
+                      <div className="flex items-center gap-2 text-slate-500 text-2xs">
+                        <LeaveTypeBadge codeOrName={app.leave_type} />
+                        <span>&bull; {app.start_date} to {app.end_date}</span>
                       </div>
                     </div>
                   ))}
@@ -495,7 +489,9 @@ export const ExecutiveDashboard: React.FC = () => {
                         <td className="px-4 py-2.5 font-medium text-slate-900">
                           {rf.employee_name || 'Walk-in Personnel'}
                         </td>
-                        <td className="px-4 py-2.5 text-2xs text-slate-600">{rf.leave_type}</td>
+                        <td className="px-4 py-2.5 text-2xs text-slate-600">
+                          <LeaveTypeBadge codeOrName={rf.leave_type} />
+                        </td>
                         <td className="px-4 py-2.5 font-bold text-teal-800 text-2xs">{rf.total_days} d</td>
                         <td className="px-4 py-2.5">
                           <span

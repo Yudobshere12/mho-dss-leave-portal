@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- Supabase Seed Data: seed.sql
 -- Description: Dummy test records for MHO DSS Leave Portal
--- Roster: 1 Head, 1 Admin, 1 HR, 3 Staff, balances, and sample leave applications
+-- Roster: 1 Head, 1 Admin, 3 Staff, balances, and sample leave applications
 -- ==============================================================================
 
 -- 1. Insert Profiles
@@ -53,7 +53,7 @@ VALUES
     (
         'a0000000-0000-0000-0000-000000000004',
         'Juan dela Cruz',
-        'Vacation Leave',
+        'VL',
         NULL,
         '2026-11-02',
         '2026-11-04',
@@ -72,7 +72,7 @@ VALUES
     (
         'a0000000-0000-0000-0000-000000000005',
         'Maria Santos',
-        'Sick Leave',
+        'SL',
         NULL,
         '2026-11-10',
         '2026-11-11',
@@ -91,7 +91,7 @@ VALUES
     (
         'a0000000-0000-0000-0000-000000000006',
         'Antonio Luna',
-        'Vacation Leave',
+        'VL',
         NULL,
         '2026-12-01',
         '2026-12-05',
@@ -106,11 +106,11 @@ VALUES
         '2026-11-15 10:20:00+00'
     ),
 
-    -- Record 4: REJECTED Emergency Leave (Staff 1 - Juan dela Cruz)
+    -- Record 4: REJECTED Special Emergency / Calamity Leave (Staff 1 - Juan dela Cruz)
     (
         'a0000000-0000-0000-0000-000000000004',
         'Juan dela Cruz',
-        'Emergency Leave',
+        'CALAMITY',
         NULL,
         '2026-11-18',
         '2026-11-19',
@@ -129,7 +129,7 @@ VALUES
     (
         NULL,
         'Lourdes Mendoza',
-        'Special Privilege Leave',
+        'SPL',
         NULL,
         '2026-12-10',
         '2026-12-11',

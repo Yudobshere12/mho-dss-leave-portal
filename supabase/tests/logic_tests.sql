@@ -97,14 +97,14 @@ BEGIN
 
     -- Staff A requests 3 days Vacation (Only 2 available) -> Insufficient
     SELECT * INTO v_credit_res 
-    FROM public.evaluate_leave_credits(v_staff_a, 'Vacation Leave', 3.0);
+    FROM public.evaluate_leave_credits(v_staff_a, 'VL', 3.0);
     IF v_credit_res.passed != FALSE THEN
         RAISE EXCEPTION 'TEST FAILED: Expected insufficient credit evaluation to fail';
     END IF;
 
     -- Staff A requests 2 days Vacation (2 available) -> Sufficient
     SELECT * INTO v_credit_res 
-    FROM public.evaluate_leave_credits(v_staff_a, 'Vacation Leave', 2.0);
+    FROM public.evaluate_leave_credits(v_staff_a, 'VL', 2.0);
     IF v_credit_res.passed != TRUE THEN
         RAISE EXCEPTION 'TEST FAILED: Expected sufficient credit evaluation to pass';
     END IF;
@@ -119,7 +119,7 @@ BEGIN
     INSERT INTO public.leave_applications (
         user_id, employee_name, leave_type, start_date, end_date, total_days, status
     )
-    VALUES (v_staff_b, 'Staff Beta', 'Vacation Leave', '2026-12-01', '2026-12-03', 3.0, 'APPROVED')
+    VALUES (v_staff_b, 'Staff Beta', 'VL', '2026-12-01', '2026-12-03', 3.0, 'APPROVED')
     RETURNING id INTO v_app_1;
 
     -- Scenario 3A: Direct user overlap
@@ -149,14 +149,14 @@ BEGIN
 
     -- Staff C requesting 2 days Vacation during conflict period -> NEEDS_REVIEW
     SELECT * INTO v_dss_res 
-    FROM public.get_dss_recommendation(v_staff_c, 'Vacation Leave', 2.0, '2026-12-01'::DATE, '2026-12-02'::DATE);
+    FROM public.get_dss_recommendation(v_staff_c, 'VL', 2.0, '2026-12-01'::DATE, '2026-12-02'::DATE);
     IF v_dss_res.recommendation != 'NEEDS_REVIEW' THEN
         RAISE EXCEPTION 'TEST FAILED: Expected NEEDS_REVIEW due to staffing threshold warning';
     END IF;
 
     -- Staff C requesting 2 days Vacation on non-conflicting future period -> RECOMMENDED
     SELECT * INTO v_dss_res 
-    FROM public.get_dss_recommendation(v_staff_c, 'Vacation Leave', 2.0, '2026-12-15'::DATE, '2026-12-16'::DATE);
+    FROM public.get_dss_recommendation(v_staff_c, 'VL', 2.0, '2026-12-15'::DATE, '2026-12-16'::DATE);
     IF v_dss_res.recommendation != 'RECOMMENDED' THEN
         RAISE EXCEPTION 'TEST FAILED: Expected RECOMMENDED for non-conflicting schedule with sufficient credits';
     END IF;
@@ -170,7 +170,7 @@ BEGIN
     INSERT INTO public.leave_applications (
         user_id, employee_name, leave_type, start_date, end_date, total_days, status
     )
-    VALUES (v_staff_a, 'Staff Alpha', 'Vacation Leave', '2026-11-25', '2026-11-26', 2.0, 'PENDING')
+    VALUES (v_staff_a, 'Staff Alpha', 'VL', '2026-11-25', '2026-11-26', 2.0, 'PENDING')
     RETURNING id INTO v_app_2;
 
     -- Approve Application #v_app_2
@@ -221,7 +221,7 @@ BEGIN
     INSERT INTO public.leave_applications (
         user_id, employee_name, leave_type, start_date, end_date, total_days, status
     )
-    VALUES (v_staff_c, 'Staff Gamma', 'Sick Leave', '2026-11-27', '2026-11-27', 1.0, 'PENDING')
+    VALUES (v_staff_c, 'Staff Gamma', 'SL', '2026-11-27', '2026-11-27', 1.0, 'PENDING')
     RETURNING id INTO v_app_3;
 
     v_app_res := public.reject_leave(v_app_3, v_admin_id, 'Medical cert not attached');

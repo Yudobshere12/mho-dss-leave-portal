@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   FileSignature,
   UserCheck,
@@ -17,6 +17,8 @@ import { countWeekdays } from '../../utils/weekday'
 import { supabase } from '../../lib/supabase'
 import { PageHeader } from '../../components/PageHeader'
 import { NotAuthorizedFallback } from '../../components/NotAuthorizedFallback'
+import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord } from '../../lib/leaveTypes'
+import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
 import type { LeaveType } from '../../types/database.types'
 
 export const LeaveFilingPage: React.FC = () => {
@@ -27,6 +29,9 @@ export const LeaveFilingPage: React.FC = () => {
   const canFileSelf = isActionAllowed(activeRole, 'leave:file_self')
   const canFileOnBehalf = isActionAllowed(activeRole, 'leave:file_on_behalf')
 
+  // Available leave types (fetched or fallback)
+  const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>(FALLBACK_LEAVE_TYPES)
+
   // Filing Mode: 'SELF' vs 'ON_BEHALF' (only visible to MHO_ADMIN)
   const [filingMode, setFilingMode] = useState<'SELF' | 'ON_BEHALF'>('SELF')
 
@@ -36,11 +41,16 @@ export const LeaveFilingPage: React.FC = () => {
   const [walkInName, setWalkInName] = useState<string>('')
 
   // Form Fields
-  const [leaveType, setLeaveType] = useState<LeaveType>('Vacation Leave')
+  const [leaveType, setLeaveType] = useState<LeaveType>('VL')
   const [otherLeaveType, setOtherLeaveType] = useState<string>('')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   const [reason, setReason] = useState<string>('')
+
+  const selectedTypeConfig = useMemo(
+    () => leaveTypes.find((t) => t.code === leaveType) || leaveTypes[0],
+    [leaveTypes, leaveType]
+  )
 
   // Calculated duration
   const totalDays = countWeekdays(startDate, endDate)
@@ -71,6 +81,30 @@ export const LeaveFilingPage: React.FC = () => {
       : targetType === 'REGISTERED'
       ? effectiveApplicantProfile?.full_name || ''
       : walkInName.trim()
+
+  // Load dynamic leave types from DB
+  useEffect(() => {
+    let isMounted = true
+    async function loadTypes() {
+      try {
+        const { data, error } = await supabase
+          .from('leave_types')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+
+        if (!error && data && data.length > 0 && isMounted) {
+          setLeaveTypes(data as LeaveTypeRecord[])
+        }
+      } catch (err) {
+        console.warn('Using fallback leave types:', err)
+      }
+    }
+    loadTypes()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!selectedUserId && availableProfiles.length > 0) {
@@ -127,22 +161,41 @@ export const LeaveFilingPage: React.FC = () => {
         return
       }
 
+      const activeTypeConfig = leaveTypes.find((t) => t.code === leaveType)
+      const chargedTo = activeTypeConfig?.charged_to ?? 'NONE'
+      const typeLabel = activeTypeConfig?.name ?? leaveType
+
+      // Advance notice check fallback
+      if (activeTypeConfig?.requires_advance_filing && startDate) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const start = new Date(startDate)
+        start.setHours(0, 0, 0, 0)
+        const diffDays = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        if (diffDays < activeTypeConfig.min_advance_days) {
+          setDssRecommendation('NEEDS_REVIEW')
+          setDssReason(
+            `Notice requirement not met: Filed ${Math.max(0, diffDays)} day(s) before start date, required at least ${activeTypeConfig.min_advance_days} days.`
+          )
+          return
+        }
+      }
+
       const prof = effectiveApplicantProfile || currentUser
       let available = 0
-      if (leaveType === 'Vacation Leave') available = prof.vacation_credits
-      else if (leaveType === 'Sick Leave') available = prof.sick_credits
-      else if (leaveType === 'Emergency Leave') available = prof.emergency_credits
+      if (chargedTo === 'VL') available = prof.vacation_credits
+      else if (chargedTo === 'SL') available = prof.sick_credits
       else available = 999
 
       if (available < totalDays) {
         setDssRecommendation('NEEDS_REVIEW')
         setDssReason(
-          `Insufficient ${leaveType} balance. Requested: ${totalDays} days, Available: ${available} days.`
+          `Insufficient ${typeLabel} balance. Requested: ${totalDays} days, Available: ${available} days.`
         )
       } else {
         setDssRecommendation('RECOMMENDED')
         setDssReason(
-          `Sufficient balance available (${available} days remaining). Duty staff coverage satisfied.`
+          `Sufficient balance available (${available >= 999 ? 'Non-credit/Statutory' : `${available} days remaining`}). Duty staff coverage satisfied.`
         )
       }
     }
@@ -183,15 +236,15 @@ export const LeaveFilingPage: React.FC = () => {
     }
 
     if (effectiveApplicantProfile) {
-      let availableCredits = 0
-      if (leaveType === 'Vacation Leave') availableCredits = effectiveApplicantProfile.vacation_credits
-      else if (leaveType === 'Sick Leave') availableCredits = effectiveApplicantProfile.sick_credits
-      else if (leaveType === 'Emergency Leave') availableCredits = effectiveApplicantProfile.emergency_credits
-      else availableCredits = 999
+      const activeTypeConfig = leaveTypes.find((t) => t.code === leaveType)
+      const chargedTo = activeTypeConfig?.charged_to ?? 'NONE'
+      let availableCredits = 999
+      if (chargedTo === 'VL') availableCredits = effectiveApplicantProfile.vacation_credits
+      else if (chargedTo === 'SL') availableCredits = effectiveApplicantProfile.sick_credits
 
       if (totalDays > availableCredits) {
         setSubmitError(
-          `Requested ${totalDays} day(s) exceeds available remaining balance (${availableCredits} days) for ${leaveType}.`
+          `Requested ${totalDays} day(s) exceeds available remaining balance (${availableCredits} days) for ${activeTypeConfig?.name || leaveType}.`
         )
         return
       }
@@ -204,7 +257,7 @@ export const LeaveFilingPage: React.FC = () => {
         user_id: effectiveUserId,
         employee_name: effectiveEmployeeName,
         leave_type: leaveType,
-        other_leave_type: leaveType === 'Other' ? otherLeaveType : null,
+        other_leave_type: leaveType === 'OTHER' ? otherLeaveType : null,
         start_date: startDate,
         end_date: endDate,
         total_days: totalDays,
@@ -398,25 +451,38 @@ export const LeaveFilingPage: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-3">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Category *</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block font-semibold text-slate-700">Category *</label>
+                {selectedTypeConfig && (
+                  <LeaveTypeBadge codeOrName={selectedTypeConfig.code} showName={false} />
+                )}
+              </div>
               <select
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value as LeaveType)}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-900 focus:border-teal-700 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-700/20"
               >
-                <option value="Vacation Leave">Vacation Leave</option>
-                <option value="Sick Leave">Sick Leave</option>
-                <option value="Emergency Leave">Emergency Leave</option>
-                <option value="Maternity Leave">Maternity Leave</option>
-                <option value="Paternity Leave">Paternity Leave</option>
-                <option value="Special Privilege Leave">Special Privilege Leave</option>
-                <option value="Other">Other Category</option>
+                {leaveTypes.map((t) => (
+                  <option key={t.code} value={t.code}>
+                    [{t.code}] {t.name}
+                  </option>
+                ))}
               </select>
+              {selectedTypeConfig?.legal_basis && (
+                <p className="mt-1 text-2xs text-slate-500 italic">
+                  Legal Basis: {selectedTypeConfig.legal_basis}
+                </p>
+              )}
+              {selectedTypeConfig?.requires_advance_filing && (
+                <p className="mt-0.5 text-2xs text-amber-700 font-medium">
+                  &bull; Requires advance filing (at least {selectedTypeConfig.min_advance_days} days notice before leave start).
+                </p>
+              )}
             </div>
 
-            {leaveType === 'Other' && (
+            {leaveType === 'OTHER' && (
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Details *</label>
                 <input
