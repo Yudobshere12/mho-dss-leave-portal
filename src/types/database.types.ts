@@ -9,14 +9,7 @@ export type Json =
 export type UserRole = 'STAFF' | 'MHO_ADMIN' | 'MHO_HEAD'
 export type UserStatus = 'pending' | 'approved' | 'rejected'
 
-export type LeaveType =
-  | 'Vacation Leave'
-  | 'Sick Leave'
-  | 'Emergency Leave'
-  | 'Maternity Leave'
-  | 'Paternity Leave'
-  | 'Special Privilege Leave'
-  | 'Other'
+export type LeaveType = string
 
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
@@ -226,6 +219,45 @@ export interface Database {
           },
         ]
       }
+      leave_types: {
+        Row: {
+          code: string
+          name: string
+          legal_basis: string | null
+          charged_to: 'VL' | 'SL' | 'NONE'
+          requires_advance_filing: boolean
+          min_advance_days: number
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          name: string
+          legal_basis?: string | null
+          charged_to?: 'VL' | 'SL' | 'NONE'
+          requires_advance_filing?: boolean
+          min_advance_days?: number
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          name?: string
+          legal_basis?: string | null
+          charged_to?: 'VL' | 'SL' | 'NONE'
+          requires_advance_filing?: boolean
+          min_advance_days?: number
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           key: string
@@ -324,7 +356,6 @@ export interface Database {
     Enums: {
       user_role: UserRole
       user_status: UserStatus
-      leave_type: LeaveType
       leave_status: LeaveStatus
     }
     CompositeTypes: {
