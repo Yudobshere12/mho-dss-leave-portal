@@ -14,6 +14,7 @@ import {
   User,
 } from 'lucide-react'
 import { useDevRole } from '../../context/DevRoleContext'
+import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { countWeekdays } from '../../utils/weekday'
 import { PageHeader } from '../../components/PageHeader'
@@ -38,6 +39,7 @@ function formatLastFirst(fullName: string | null | undefined): string {
 }
 
 export const LeaveFilingPage: React.FC = () => {
+  const { user } = useAuth()
   const { currentUser, availableProfiles } = useDevRole()
   const { settings } = useSystemSettings()
 
@@ -90,7 +92,7 @@ export const LeaveFilingPage: React.FC = () => {
   // Effective applicant profile
   const effectiveUserId =
     filingMode === 'SELF'
-      ? currentUser.id
+      ? (user?.id || currentUser.id)
       : targetType === 'REGISTERED'
       ? selectedUserId || (availableProfiles[0]?.id ?? '')
       : null
@@ -935,8 +937,8 @@ export const LeaveFilingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Live DSS Advisory Evaluation */}
-            {startDate && endDate && (
+            {/* Live DSS Advisory Evaluation (Restricted to Management: Admin / Head) */}
+            {startDate && endDate && ['MHO_ADMIN', 'MHO_HEAD'].includes(currentUser?.role) && (
               <DssAdvisoryCard
                 viewModel={dssViewModel}
                 isLoading={isDssLoading}
@@ -979,12 +981,12 @@ export const LeaveFilingPage: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating CS Form 6 & Filing...
+                    Submitting Application...
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    Submit CS Form No. 6 Application
+                    Submit Leave Application
                   </>
                 )}
               </button>
