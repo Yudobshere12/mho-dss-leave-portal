@@ -17,6 +17,8 @@ import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
+import { ApprovalQueueSkeleton } from './ApprovalQueueSkeleton'
+import { useSkeletonDelayedLoading } from '../../hooks/useSkeletonLoading'
 import { useSystemSettings } from '../../lib/systemSettings'
 import type { Database } from '../../types/database.types'
 
@@ -29,6 +31,7 @@ export const ApprovalQueueScreen: React.FC = () => {
   const [applications, setApplications] = useState<LeaveApplication[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const showSkeleton = useSkeletonDelayedLoading(isLoading)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Decision Modal State
@@ -183,8 +186,8 @@ export const ApprovalQueueScreen: React.FC = () => {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft space-y-4">
-        {isLoading ? (
-          <LoadingState message="Fetching pending leave applications..." />
+        {showSkeleton ? (
+          <ApprovalQueueSkeleton />
         ) : errorMessage ? (
           <ErrorState message={errorMessage} onRetry={fetchPendingQueue} />
         ) : applications.length === 0 ? (
