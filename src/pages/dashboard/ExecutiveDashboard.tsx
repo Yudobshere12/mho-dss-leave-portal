@@ -23,6 +23,8 @@ import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
+import { ExecutiveDashboardSkeleton } from './ExecutiveDashboardSkeleton'
+import { useSkeletonDelayedLoading } from '../../hooks/useSkeletonLoading'
 import { getLeaveTypeTheme } from '../../lib/leaveTypes'
 import type { Database } from '../../types/database.types'
 
@@ -46,6 +48,7 @@ export const ExecutiveDashboard: React.FC = () => {
   const [minStaffThreshold, setMinStaffThreshold] = useState<number>(2)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const showSkeleton = useSkeletonDelayedLoading(isLoading)
   const [unauthorizedNotice, setUnauthorizedNotice] = useState<string | null>(
     (location.state as { unauthorizedRoute?: string })?.unauthorizedRoute
       ? `You do not have permission to access ${(location.state as { unauthorizedRoute?: string }).unauthorizedRoute}. Redirected to dashboard.`
@@ -259,8 +262,8 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
       </div>
 
-      {isLoading ? (
-        <LoadingState message="Loading dashboard records..." />
+      {showSkeleton ? (
+        <ExecutiveDashboardSkeleton />
       ) : errorMessage ? (
         <ErrorState message={errorMessage} onRetry={loadData} />
       ) : (
