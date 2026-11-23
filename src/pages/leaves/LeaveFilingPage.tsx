@@ -24,6 +24,8 @@ import { DssAdvisoryCard } from '../../components/DssAdvisoryCard'
 import { parseDssFromRpc } from '../../lib/dssPresenter'
 import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord } from '../../lib/leaveTypes'
 import { useSystemSettings } from '../../lib/systemSettings'
+import { LeaveFilingSkeleton } from './LeaveFilingSkeleton'
+import { useSkeletonDelayedLoading } from '../../hooks/useSkeletonLoading'
 import type { Database, CommutationType, LeaveDetails } from '../../types/database.types'
 
 type LeaveType = Database['public']['Tables']['leave_applications']['Row']['leave_type']
@@ -39,11 +41,12 @@ function formatLastFirst(fullName: string | null | undefined): string {
 }
 
 export const LeaveFilingPage: React.FC = () => {
-  const { user } = useAuth()
-  const { currentUser, availableProfiles } = useDevRole()
-  const { settings } = useSystemSettings()
+  const { user, loading: authLoading } = useAuth()
+  const { currentUser, availableProfiles, isLoading: devRoleLoading } = useDevRole()
+  const { settings, isLoading: settingsLoading } = useSystemSettings()
 
   const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>(FALLBACK_LEAVE_TYPES)
+  const [isTypesLoading, setIsTypesLoading] = useState<boolean>(true)
   const [filingMode, setFilingMode] = useState<'SELF' | 'ON_BEHALF'>('SELF')
 
   // On-Behalf specific sub-state
@@ -133,6 +136,10 @@ export const LeaveFilingPage: React.FC = () => {
         }
       } catch (err) {
         console.warn('Using fallback leave types:', err)
+      } finally {
+        if (isMounted) {
+          setIsTypesLoading(false)
+        }
       }
     }
     loadTypes()
@@ -406,6 +413,13 @@ export const LeaveFilingPage: React.FC = () => {
     }
   }
 
+  const isInitialLoading = authLoading || devRoleLoading || settingsLoading || isTypesLoading
+  const showSkeleton = useSkeletonDelayedLoading(isInitialLoading)
+
+  if (showSkeleton) {
+    return <LeaveFilingSkeleton />
+  }
+
   if (!canFileSelf && !canFileOnBehalf) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -569,43 +583,49 @@ export const LeaveFilingPage: React.FC = () => {
               <span className="text-2xs uppercase tracking-wider font-bold text-slate-600 block border-b border-slate-200 pb-1.5">
                 Form Header Information
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.2fr_1fr_1fr] gap-4 items-end">
                 {/* 1. Office / Agency */}
-                <div>
-                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
+                <div className="flex flex-col justify-end gap-1.5">
+                  <label className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
                     1. Office / Agency
                   </label>
-                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-800 font-semibold truncate flex items-center gap-1.5">
-                    <Building className="h-3 w-3 text-slate-400 shrink-0" />
-                    <span>{settings.office_name}</span>
+                  <div
+                    title={settings.office_name}
+                    className="h-10 px-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold text-xs flex items-center gap-2 overflow-hidden shadow-2xs"
+                  >
+                    <Building className="h-4 w-4 text-slate-400 shrink-0" />
+                    <span className="truncate">{settings.office_name}</span>
                   </div>
                 </div>
 
                 {/* 2. Name (Last, First, Middle) */}
-                <div>
-                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
-                    2. Name (Last, First, Middle)
+                <div className="flex flex-col justify-end gap-1.5">
+                  <label className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
+                    2. Name (Last, First, MI)
                   </label>
-                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-900 font-semibold truncate flex items-center gap-1.5">
-                    <User className="h-3 w-3 text-slate-400 shrink-0" />
-                    <span>{formatLastFirst(effectiveEmployeeName) || 'Applicant Name'}</span>
+                  <div
+                    title={formatLastFirst(effectiveEmployeeName) || 'Applicant Name'}
+                    className="h-10 px-3 rounded-lg bg-white border border-slate-300 text-slate-900 font-semibold text-xs flex items-center gap-2 overflow-hidden shadow-2xs"
+                  >
+                    <User className="h-4 w-4 text-slate-400 shrink-0" />
+                    <span className="truncate">{formatLastFirst(effectiveEmployeeName) || 'Applicant Name'}</span>
                   </div>
                 </div>
 
                 {/* 3. Date of Filing */}
-                <div>
-                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
+                <div className="flex flex-col justify-end gap-1.5">
+                  <label className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
                     3. Date of Filing
                   </label>
-                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-800 font-semibold flex items-center gap-1.5">
-                    <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
-                    <span>{todayFormatted}</span>
+                  <div className="h-10 px-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold text-xs flex items-center gap-2 overflow-hidden shadow-2xs">
+                    <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
+                    <span className="truncate">{todayFormatted}</span>
                   </div>
                 </div>
 
                 {/* 4. Position */}
-                <div>
-                  <label className="block text-3xs uppercase font-bold text-slate-500 mb-0.5">
+                <div className="flex flex-col justify-end gap-1.5">
+                  <label className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
                     4. Position *
                   </label>
                   <input
@@ -614,7 +634,7 @@ export const LeaveFilingPage: React.FC = () => {
                     value={positionAtFiling}
                     onChange={(e) => setPositionAtFiling(e.target.value)}
                     placeholder="e.g. Nurse II, Midwife III"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 font-semibold focus:border-teal-700 focus:outline-hidden"
+                    className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 font-semibold shadow-2xs focus:border-teal-700 focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -975,7 +995,7 @@ export const LeaveFilingPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={isSubmitting || totalDays <= 0 || isTooEarlyForAdvanceNotice}
+                disabled={isSubmitting || isInitialLoading || totalDays <= 0 || isTooEarlyForAdvanceNotice}
                 className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-xs font-semibold text-white shadow-soft hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isSubmitting ? (

@@ -23,6 +23,8 @@ import { ErrorState } from '../../components/ErrorState'
 import { LeaveTypeBadge } from '../../components/LeaveTypeBadge'
 import { CSForm6DetailModal } from '../../components/CSForm6DetailModal'
 import { LeaveCalendarView } from '../../components/LeaveCalendarView'
+import { LeaveMonitorHubSkeleton } from './LeaveMonitorHubSkeleton'
+import { useSkeletonDelayedLoading } from '../../hooks/useSkeletonLoading'
 import { FALLBACK_LEAVE_TYPES, type LeaveTypeRecord, getLeaveTypeTheme } from '../../lib/leaveTypes'
 import { useSystemSettings } from '../../lib/systemSettings'
 import { toDateString } from '../../utils/calendarUtils'
@@ -46,6 +48,7 @@ export const LeaveMonitorHub: React.FC = () => {
   const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>(FALLBACK_LEAVE_TYPES)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const showSkeleton = useSkeletonDelayedLoading(isLoading)
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
@@ -388,10 +391,8 @@ export const LeaveMonitorHub: React.FC = () => {
 
           {/* Main Table / State View */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-soft overflow-hidden">
-            {isLoading ? (
-              <div className="p-8">
-                <LoadingState message="Loading leave applications directory..." />
-              </div>
+            {showSkeleton ? (
+              <LeaveMonitorHubSkeleton />
             ) : errorMessage ? (
               <div className="p-8">
                 <ErrorState message={errorMessage} onRetry={fetchRecords} />

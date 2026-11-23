@@ -18,6 +18,8 @@ import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { AuditLogsSkeleton } from './AuditLogsSkeleton'
+import { useSkeletonDelayedLoading } from '../../hooks/useSkeletonLoading'
 import type { Tables } from '../../types/database.types'
 
 type AuditLog = Tables<'audit_logs'>
@@ -34,6 +36,7 @@ export const AuditLogsScreen: React.FC = () => {
   const [logs, setLogs] = useState<EnrichedAuditLog[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const showSkeleton = useSkeletonDelayedLoading(isLoading)
 
   // Status Metrics
   const [totalApproved, setTotalApproved] = useState<number>(0)
@@ -321,8 +324,8 @@ export const AuditLogsScreen: React.FC = () => {
           </div>
         </div>
 
-        {isLoading ? (
-          <LoadingState message="Loading audit trail..." />
+        {showSkeleton ? (
+          <AuditLogsSkeleton />
         ) : errorMessage ? (
           <ErrorState message={errorMessage} onRetry={fetchAuditData} />
         ) : filteredLogs.length === 0 ? (

@@ -94,43 +94,69 @@ export const CSForm6DetailModal: React.FC<CSForm6DetailModalProps> = ({
         {/* Form Body - CS Form 6 Layout */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-xs text-slate-800 flex-1">
           {/* Header Metadata Block */}
-          <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <span className="text-3xs uppercase font-bold text-slate-500 block">1. Office / Agency</span>
-              <span className="font-semibold text-slate-900 flex items-center gap-1 mt-0.5">
-                <Building className="h-3 w-3 text-slate-400" />
-                {officeName}
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.2fr_1fr_1fr_1fr_1fr] gap-4 items-end">
+            <div className="flex flex-col justify-end gap-1.5">
+              <span className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
+                1. Office / Agency
               </span>
+              <div
+                title={officeName}
+                className="h-10 px-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold text-xs flex items-center gap-2 overflow-hidden shadow-2xs"
+              >
+                <Building className="h-4 w-4 text-slate-400 shrink-0" />
+                <span className="truncate">{officeName}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-3xs uppercase font-bold text-slate-500 block">2. Name (Last, First, Middle)</span>
-              <span className="font-semibold text-slate-900 flex items-center gap-1 mt-0.5">
-                <User className="h-3 w-3 text-slate-400" />
-                {formatFullName(application.employee_name)}
+
+            <div className="flex flex-col justify-end gap-1.5">
+              <span className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
+                2. Name (Last, First, MI)
               </span>
+              <div
+                title={formatFullName(application.employee_name)}
+                className="h-10 px-3 rounded-lg bg-white border border-slate-300 text-slate-900 font-semibold text-xs flex items-center gap-2 overflow-hidden shadow-2xs"
+              >
+                <User className="h-4 w-4 text-slate-400 shrink-0" />
+                <span className="truncate">{formatFullName(application.employee_name)}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-3xs uppercase font-bold text-slate-500 block">3. Date of Filing</span>
-              <span className="font-semibold text-slate-900 flex items-center gap-1 mt-0.5">
-                <Calendar className="h-3 w-3 text-slate-400" />
-                {application.date_of_filing || application.created_at?.slice(0, 10)}
+
+            <div className="flex flex-col justify-end gap-1.5">
+              <span className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
+                3. Date of Filing
               </span>
+              <div className="h-10 px-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold text-xs flex items-center gap-2 overflow-hidden shadow-2xs">
+                <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
+                <span className="truncate">{application.date_of_filing || application.created_at?.slice(0, 10)}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-3xs uppercase font-bold text-slate-500 block">4. Position</span>
-              <span className="font-semibold text-slate-900 mt-0.5 block">
-                {application.position_at_filing || 'Staff'}
+
+            <div className="flex flex-col justify-end gap-1.5">
+              <span className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
+                4. Position
               </span>
+              <div
+                title={application.position_at_filing || 'Staff'}
+                className="h-10 px-3 rounded-lg bg-white border border-slate-300 text-slate-900 font-semibold text-xs flex items-center overflow-hidden shadow-2xs"
+              >
+                <span className="truncate">{application.position_at_filing || 'Staff'}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-3xs uppercase font-bold text-slate-500 block">Control Number</span>
-              <span className="font-mono font-semibold text-teal-800 mt-0.5 block">
-                {application.control_number || 'N/A'}
+
+            <div className="flex flex-col justify-end gap-1.5">
+              <span className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
+                Control Number
               </span>
+              <div className="h-10 px-3 rounded-lg bg-white border border-slate-300 font-mono font-semibold text-teal-800 text-xs flex items-center overflow-hidden shadow-2xs">
+                <span className="truncate">{application.control_number || 'N/A'}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-3xs uppercase font-bold text-slate-500 block">Current Status</span>
-              <div className="mt-0.5">
+
+            <div className="flex flex-col justify-end gap-1.5">
+              <span className="block text-xs uppercase font-bold text-slate-500 tracking-wide whitespace-nowrap">
+                Current Status
+              </span>
+              <div className="h-10 px-3 rounded-lg bg-white border border-slate-300 flex items-center overflow-hidden shadow-2xs">
                 <span
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold ${
                     application.status === 'APPROVED'
@@ -143,7 +169,7 @@ export const CSForm6DetailModal: React.FC<CSForm6DetailModalProps> = ({
                   {application.status === 'APPROVED' && <CheckCircle2 className="h-3 w-3" />}
                   {application.status === 'REJECTED' && <XCircle className="h-3 w-3" />}
                   {application.status === 'PENDING' && <Clock className="h-3 w-3" />}
-                  {application.status}
+                  <span>{application.status}</span>
                 </span>
               </div>
             </div>

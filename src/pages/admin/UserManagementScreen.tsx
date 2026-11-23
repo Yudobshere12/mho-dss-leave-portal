@@ -20,6 +20,8 @@ import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { UserManagementSkeleton } from './UserManagementSkeleton'
+import { useSkeletonDelayedLoading } from '../../hooks/useSkeletonLoading'
 import type { Database, UserRole, UserStatus } from '../../types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -36,6 +38,7 @@ export const UserManagementScreen: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const showSkeleton = useSkeletonDelayedLoading(isLoading)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Quick Action Pending Review state (stores role selection per pending row)
@@ -394,8 +397,8 @@ export const UserManagementScreen: React.FC = () => {
         </button>
       </div>
 
-      {isLoading ? (
-        <LoadingState message="Loading user directory..." />
+      {showSkeleton ? (
+        <UserManagementSkeleton />
       ) : errorMessage ? (
         <ErrorState message={errorMessage} onRetry={fetchProfiles} />
       ) : activeTab === 'PENDING' ? (

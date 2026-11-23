@@ -11,6 +11,8 @@ import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { PersonnelDirectorySkeleton } from './PersonnelDirectorySkeleton'
+import { useSkeletonDelayedLoading } from '../../hooks/useSkeletonLoading'
 
 interface PersonnelRow {
   [key: string]: unknown
@@ -134,6 +136,8 @@ export const PersonnelDirectoryScreen: React.FC = () => {
     retry: 1,
   })
 
+  const showSkeleton = useSkeletonDelayedLoading(isLoading)
+
   const rows = data ?? []
 
   const filtered = rows.filter((p) => {
@@ -249,8 +253,8 @@ export const PersonnelDirectoryScreen: React.FC = () => {
           </span>
         </div>
 
-        {isLoading ? (
-          <LoadingState message="Loading personnel records..." />
+        {showSkeleton ? (
+          <PersonnelDirectorySkeleton />
         ) : isError ? (
           <ErrorState
             message={error instanceof Error ? error.message : 'Failed to query personnel data.'}
