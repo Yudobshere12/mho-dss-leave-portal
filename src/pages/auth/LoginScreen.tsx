@@ -26,6 +26,33 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
+// Map Supabase auth errors to friendly, actionable messages
+const formatAuthError = (err: unknown, mode: 'login' | 'signup'): string => {
+  if (!(err instanceof Error)) {
+    return 'An unexpected error occurred. Please try again.'
+  }
+
+  const msg = err.message.toLowerCase()
+
+  if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
+    return 'Invalid email or password. If you originally signed up using Google, please click "Sign in with Google" below, or check your password.'
+  }
+  if (msg.includes('email not confirmed')) {
+    return 'Your email address has not been confirmed yet. Please check your inbox for the confirmation email.'
+  }
+  if (msg.includes('user already registered') || msg.includes('already exists')) {
+    return 'An account with this email already exists. Please try signing in or use Google sign-in.'
+  }
+  if (msg.includes('rate limit') || msg.includes('too many requests')) {
+    return 'Too many login attempts. Please wait a few moments and try again.'
+  }
+  if (msg.includes('network') || msg.includes('failed to fetch')) {
+    return 'Unable to reach the server. Please check your internet connection.'
+  }
+
+  return err.message
+}
+
 export const LoginScreen: React.FC = () => {
   // ── All hooks MUST be called before any early return ──
   const { session, status, signInWithGoogle, signUp } = useAuth()
@@ -74,7 +101,7 @@ export const LoginScreen: React.FC = () => {
         setMode('login')
       }
     } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : 'An unexpected error occurred.')
+      setAuthError(formatAuthError(err, mode))
     } finally {
       setIsSubmitting(false)
     }
