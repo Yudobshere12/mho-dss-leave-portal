@@ -318,59 +318,61 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Duty Coverage */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-100 pb-2.5">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-teal-700" />
-                <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  Duty Staff Coverage Monitor
-                </h2>
-              </div>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-bold ${
-                  staffingCoverage.isUnderThreshold
-                    ? 'bg-red-50 text-red-800 border border-red-200'
-                    : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                }`}
-              >
-                {staffingCoverage.isUnderThreshold ? (
-                  <>
-                    <AlertTriangle className="h-3 w-3 text-red-600" /> Under Min Threshold ({staffingCoverage.minThreshold})
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Staffing Satisfied
-                  </>
-                )}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <span className="text-slate-500 font-semibold block text-2xs uppercase">Staff Pool</span>
-                <span className="text-xl font-bold text-slate-900">{staffingCoverage.totalActiveStaff}</span>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <span className="text-slate-500 font-semibold block text-2xs uppercase">On Leave Today</span>
-                <span className="text-xl font-bold text-amber-600">{staffingCoverage.onLeaveCount}</span>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <span className="text-slate-500 font-semibold block text-2xs uppercase">On Duty</span>
+          {/* Duty Coverage - Visible only to management (MHO_ADMIN and MHO_HEAD) */}
+          {canViewAggregate && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-teal-700" />
+                  <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Duty Staff Coverage Monitor
+                  </h2>
+                </div>
                 <span
-                  className={`text-xl font-bold ${
-                    staffingCoverage.isUnderThreshold ? 'text-red-600' : 'text-emerald-600'
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-bold ${
+                    staffingCoverage.isUnderThreshold
+                      ? 'bg-red-50 text-red-800 border border-red-200'
+                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                   }`}
                 >
-                  {staffingCoverage.currentOnDuty}
+                  {staffingCoverage.isUnderThreshold ? (
+                    <>
+                      <AlertTriangle className="h-3 w-3 text-red-600" /> Under Min Threshold ({staffingCoverage.minThreshold})
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Staffing Satisfied
+                    </>
+                  )}
                 </span>
               </div>
-              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <span className="text-slate-500 font-semibold block text-2xs uppercase">Min Threshold</span>
-                <span className="text-xl font-bold text-teal-800">{staffingCoverage.minThreshold}</span>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+                  <span className="text-slate-500 font-semibold block text-2xs uppercase">Staff Pool</span>
+                  <span className="text-xl font-bold text-slate-900">{staffingCoverage.totalActiveStaff}</span>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+                  <span className="text-slate-500 font-semibold block text-2xs uppercase">On Leave Today</span>
+                  <span className="text-xl font-bold text-amber-600">{staffingCoverage.onLeaveCount}</span>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+                  <span className="text-slate-500 font-semibold block text-2xs uppercase">On Duty</span>
+                  <span
+                    className={`text-xl font-bold ${
+                      staffingCoverage.isUnderThreshold ? 'text-red-600' : 'text-emerald-600'
+                    }`}
+                  >
+                    {staffingCoverage.currentOnDuty}
+                  </span>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+                  <span className="text-slate-500 font-semibold block text-2xs uppercase">Min Threshold</span>
+                  <span className="text-xl font-bold text-teal-800">{staffingCoverage.minThreshold}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Middle Row: Distribution & Upcoming */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
