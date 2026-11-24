@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { Database } from '../types/database.types'
 import { useAuth } from './AuthContext'
+import { supabase } from '../lib/supabase'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -90,8 +91,56 @@ const LOCAL_STORAGE_KEY = 'mho_dss_dev_acting_user_id'
 
 export const DevRoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile: authProfile, loading: authLoading } = useAuth()
-  const [availableProfiles] = useState<Profile[]>(FALLBACK_PROFILES)
+  const [availableProfiles, setAvailableProfiles] = useState<Profile[]>(FALLBACK_PROFILES)
   const [devSimulatedUser, setDevSimulatedUser] = useState<Profile | null>(null)
+
+  // Fetch real profiles and merge with leave_balances
+  const fetchProfiles = useCallback(async () => {
+    try {
+      const { data: profilesData, error: pe } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name')
+
+      if (pe || !profilesData || profilesData.length === 0) return
+
+      // Fetch leave balances for real credits
+      const { data: balanceData } = await supabase
+        .from('leave_balances')
+        .select('user_id, vacation_credits, sick_credits, emergency_credits')
+
+      const balanceMap = new Map<string, { vacation: number; sick: number; emergency: number }>()
+      if (balanceData) {
+        for (const b of balanceData) {
+          balanceMap.set(b.user_id, {
+            vacation: Number(b.vacation_credits),
+            sick: Number(b.sick_credits),
+            emergency: Number(b.emergency_credits),
+          })
+        }
+      }
+
+      const merged = profilesData.map((p) => {
+        const bal = balanceMap.get(p.id)
+        return bal
+          ? {
+              ...p,
+              vacation_credits: bal.vacation,
+              sick_credits: bal.sick,
+              emergency_credits: bal.emergency,
+            }
+          : p
+      })
+
+      setAvailableProfiles(merged)
+    } catch (err) {
+      console.warn('Failed to fetch real profiles in DevRoleContext:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchProfiles()
+  }, [fetchProfiles])
 
   // In development, check if developer manually chose a simulated user in localStorage
   useEffect(() => {

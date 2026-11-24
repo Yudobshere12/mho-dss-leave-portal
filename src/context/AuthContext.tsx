@@ -38,7 +38,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error fetching profile:', error.message)
         return null
       }
-      return data ?? null
+      if (!data) return null
+
+      // Also fetch live credits from leave_balances table if available
+      try {
+        const { data: balanceData } = await supabase
+          .from('leave_balances')
+          .select('vacation_credits, sick_credits, emergency_credits')
+          .eq('user_id', userId)
+          .maybeSingle()
+
+        if (balanceData) {
+          return {
+            ...data,
+            vacation_credits: Number(balanceData.vacation_credits),
+            sick_credits: Number(balanceData.sick_credits),
+            emergency_credits: Number(balanceData.emergency_credits),
+          }
+        }
+      } catch (balErr) {
+        console.warn('Could not fetch separate leave_balances record:', balErr)
+      }
+
+      return data
     } catch (err) {
       console.error('Unexpected error fetching profile:', err)
       return null

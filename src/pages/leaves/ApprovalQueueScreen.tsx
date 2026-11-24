@@ -8,6 +8,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { useDevRole } from '../../context/DevRoleContext'
+import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { DssBadge } from '../../components/DssBadge'
 import { DecisionDialog, type ApprovalPayload, type RejectionPayload } from '../../components/DecisionDialog'
@@ -26,6 +27,7 @@ type LeaveApplication = Database['public']['Tables']['leave_applications']['Row'
 
 export const ApprovalQueueScreen: React.FC = () => {
   const { currentUser } = useDevRole()
+  const { refreshProfile } = useAuth()
   const { settings } = useSystemSettings()
 
   const [applications, setApplications] = useState<LeaveApplication[]>([])
@@ -129,6 +131,8 @@ export const ApprovalQueueScreen: React.FC = () => {
       setApplications((prev) => prev.filter((a) => a.id !== applicationId))
       setSelectedApp(null)
       setDecisionAction(null)
+      // Refresh user profile / balances if current user approved own or to stay in sync
+      refreshProfile().catch(console.error)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       setFeedback({
