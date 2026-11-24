@@ -32,9 +32,12 @@ type LeaveApplication = Database['public']['Tables']['leave_applications']['Row'
 
 export const ExecutiveDashboard: React.FC = () => {
   const { currentUser, availableProfiles } = useDevRole()
-  const { role: authRole } = useAuth()
+  const { role: authRole, profile: liveProfile, refreshProfile } = useAuth()
   const activeRole = authRole || currentUser.role
   const location = useLocation()
+
+  // Use the live profile if available to ensure live balances are always up-to-date
+  const effectiveProfile = liveProfile ?? currentUser
 
   // Central permissions checks
   const isStaff = activeRole === 'STAFF'
@@ -59,6 +62,9 @@ export const ExecutiveDashboard: React.FC = () => {
     setIsLoading(true)
     setErrorMessage(null)
     try {
+      // Re-sync current profile and leave credits
+      refreshProfile().catch(console.error)
+
       let query = supabase
         .from('leave_applications')
         .select('*')
@@ -233,7 +239,7 @@ export const ExecutiveDashboard: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-teal-800">
-              Leave Balances &bull; {currentUser.full_name} ({currentUser.role})
+              Leave Balances &bull; {effectiveProfile.full_name} ({effectiveProfile.role})
             </div>
             <div className="text-2xs text-slate-500 mt-0.5">
               Available authorized leave credits
@@ -243,19 +249,19 @@ export const ExecutiveDashboard: React.FC = () => {
             <div className="rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2 text-center min-w-[80px]">
               <div className="text-2xs font-semibold text-slate-500 uppercase">Vacation</div>
               <div className="text-lg font-bold text-teal-800">
-                {currentUser.vacation_credits.toFixed(1)}
+                {Number(effectiveProfile.vacation_credits ?? 0).toFixed(1)}
               </div>
             </div>
             <div className="rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2 text-center min-w-[80px]">
               <div className="text-2xs font-semibold text-slate-500 uppercase">Sick</div>
               <div className="text-lg font-bold text-emerald-700">
-                {currentUser.sick_credits.toFixed(1)}
+                {Number(effectiveProfile.sick_credits ?? 0).toFixed(1)}
               </div>
             </div>
             <div className="rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2 text-center min-w-[80px]">
               <div className="text-2xs font-semibold text-slate-500 uppercase">Emergency</div>
               <div className="text-lg font-bold text-amber-700">
-                {currentUser.emergency_credits.toFixed(1)}
+                {Number(effectiveProfile.emergency_credits ?? 0).toFixed(1)}
               </div>
             </div>
           </div>
